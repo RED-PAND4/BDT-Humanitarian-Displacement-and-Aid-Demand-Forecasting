@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data files (large — keep only samples)
+data/
+!data/sample/
+*.csv
+*.parquet
+*.json
+!configs/*.json
+
+# Delta Lake / Spark
+spark-warehouse/
+derby.log
+metastore_db/
+*.crc
+
+# MinIO
+minio-data/
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+
+# Docker
+.docker/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+command.txt

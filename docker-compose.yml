@@ -1,0 +1,398 @@
+name: project
+services:
+
+  # ════════════════════════════════════════════════════════════
+  # INGESTION LAYER
+  # ════════════════════════════════════════════════════════════
+
+  zookeeper:   #not needed if just visualisation
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - lakehouse
+
+  kafka:   #not needed if just visualisation
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # STORAGE LAYER
+  # ════════════════════════════════════════════════════════════
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lakehouse
+
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lakehouse
+
+  # Create Bucket for MinIO
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/lakehouse &&
+      mc mb --ignore-existing local/lakehouse/bronze &&
+      mc mb --ignore-existing local/lakehouse/silver &&
+      mc mb --ignore-existing local/lakehouse/gold &&
+      mc mb --ignore-existing local/lakehouse/spark-logs &&
+      echo '>>> MinIO buckets ready.'
+      "
+    networks:
+      - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # METADATA CATALOG
+  # ════════════════════════════════════════════════════════════
+
+  hive-metastore:
+    build:
+      context: ./docker/hive
+      dockerfile: Dockerfile
+    image: lakehouse/hive:4.0.0
+    container_name: hive-metastore
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+        -Djavax.jdo.option.ConnectionUserName=${POSTGRES_USER}
+        -Djavax.jdo.option.ConnectionPassword=${POSTGRES_PASSWORD}
+    ports:
+      - "9083:9083"
+    volumes:
+      - ./docker/hive/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9083' 2>/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # COMPUTE LAYER — Spark Cluster (1 Master + 2? Workers)
+  # ════════════════════════════════════════════════════════════
+
+  spark-master:  #not needed if just visualisation
+    build:
+      context: ./docker/spark
+      dockerfile: Dockerfile
+    image: lakehouse/spark:3.5.8
+    container_name: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      SPARK_MASTER_HOST: spark-master
+    ports:
+      - "8090:8080"   # Spark Master Web UI
+      - "7077:7077"   # Spark cluster port
+    volumes:
+      - ./ingestion:/opt/spark/jobs:ro
+      - ./docker/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+    networks:
+      - lakehouse
+
+  spark-worker-1:  #not needed if just visualisation
+    build:
+      context: ./docker/spark
+      dockerfile: Dockerfile
+    image: lakehouse/spark:3.5.8
+    container_name: spark-worker-1
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_WORKER_CORES: ${SPARK_WORKER_CORES}
+      SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY}
+    volumes:
+      - ./ingestion:/opt/spark/jobs:ro
+      - ./docker/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+    ports:
+      - "8091:8081"
+    networks:
+      - lakehouse
+
+  # spark-worker-2:
+  #   build:
+  #     context: ./docker/spark
+  #     dockerfile: Dockerfile
+  #   image: lakehouse/spark:3.5.8
+  #   container_name: spark-worker-2
+  #   command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+  #   depends_on:
+  #     - spark-master
+  #   environment:
+  #     SPARK_WORKER_CORES: ${SPARK_WORKER_CORES}
+  #     SPARK_WORKER_MEMORY: ${SPARK_WORKER_MEMORY}
+  #   volumes:
+  #     - ./ingestion:/opt/spark/jobs:ro
+  #     - ./docker/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+  #   ports:
+  #    - "8092:8081"
+  #   networks:
+  #     - lakehouse
+
+  # spark-history-server:
+  #   build:
+  #     context: ./docker/spark
+  #     dockerfile: Dockerfile
+  #   image: lakehouse/spark:3.5.8
+  #   container_name: spark-history-server
+  #   command: /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+  #   depends_on:
+  #     - spark-master
+  #     - minio-init
+  #   ports:
+  #     - "18080:18080"   # History Server UI
+  #   volumes:
+  #     - ./docker/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+  #   networks:
+  #     - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # ORCHESTRATION — Apache Airflow
+  # ════════════════════════════════════════════════════════════
+
+  # Migrate DB schema + create admin user
+  airflow-init:  #not needed if just visualisation
+    build:
+      context: ./docker/airflow
+      dockerfile: Dockerfile
+    image: lakehouse/airflow:3.0
+    container_name: airflow-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+      _AIRFLOW_WWW_USER_FIRSTNAME: Admin
+      _AIRFLOW_WWW_USER_LASTNAME: User
+      _AIRFLOW_WWW_USER_EMAIL: admin@lakehouse.local
+      _AIRFLOW_WWW_USER_ROLE: Admin
+    entrypoint: /bin/bash
+    command: -c "exec /entrypoint airflow version"
+    networks:
+      - lakehouse
+
+  airflow-webserver:   #not needed if just visualisation, if necessary also not needed for ingestion
+    build:
+      context: ./docker/airflow
+      dockerfile: Dockerfile
+    image: lakehouse/airflow:3.0
+    container_name: airflow-webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      AIRFLOW__FAB__SESSION_BACKEND: securecookie
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      SPARK_MASTER_URL: ${SPARK_MASTER_URL}
+      AIRFLOW_CONN_SPARK_DEFAULT: '{"conn_type": "spark", "host": "spark://spark-master", "port": 7077}'
+    command: api-server
+    ports:
+      - "8081:8080"   # Airflow Web UI
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./ingestion:/opt/spark/jobs:ro
+      - airflow_logs:/opt/airflow/logs
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - lakehouse
+
+  airflow-scheduler:     #not needed if just visualisation
+    build:
+      context: ./docker/airflow
+      dockerfile: Dockerfile
+    image: lakehouse/airflow:3.0
+    container_name: airflow-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      SPARK_MASTER_URL: ${SPARK_MASTER_URL}
+      AIRFLOW_CONN_SPARK_DEFAULT: '{"conn_type": "spark", "host": "spark://spark-master", "port": 7077}'
+      SPARK_CONF_DIR: /opt/spark/conf
+      _PIP_ADDITIONAL_REQUIREMENTS: "requests kafka-python"
+    command: scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./ingestion:/opt/spark/jobs:ro
+      - ./docker/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - airflow_logs:/opt/airflow/logs
+    networks:
+      - lakehouse
+
+  airflow-dag-processor:  #not needed if just visualisation
+    build:
+      context: ./docker/airflow
+      dockerfile: Dockerfile
+    image: lakehouse/airflow:3.0
+    container_name: airflow-dag-processor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      _PIP_ADDITIONAL_REQUIREMENTS: "requests kafka-python"
+    command: dag-processor
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./ingestion:/opt/spark/jobs:ro
+      - airflow_logs:/opt/airflow/logs
+      - ./state:/opt/airflow/state
+    networks:
+      - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # QUERY ENGINE — Trino
+  # ════════════════════════════════════════════════════════════
+
+
+  trino:  #not needed if just ingestion
+    image: trinodb/trino:438
+    container_name: trino
+    depends_on:
+      hive-metastore:
+        condition: service_healthy
+    ports:
+      - "8082:8080"   # Trino UI
+    volumes:
+      - ./docker/trino/etc:/etc/trino:ro
+    networks:
+      - lakehouse
+
+  # ════════════════════════════════════════════════════════════
+  # DASHBOARD & VISUALIZATION — Apache Superset
+  # ════════════════════════════════════════════════════════════
+
+  superset: #not needed if just ingestion
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: "YOUR_RANDOM_KEY_HERE"
+      PYTHONPATH: "/app/pythonpath:/usr/local/lib/python3.10/site-packages"
+    command: >
+      bash -c "
+      superset db upgrade &&
+      superset fab create-admin --username admin --firstname Admin --lastname User --email admin@lakehouse.io --password admin &&
+      superset init &&
+      superset run -p 8088 -h 0.0.0.0 --with-threads
+      "
+    depends_on:
+      - trino
+    networks:
+      - lakehouse
+
+
+  # ════════════════════════════════════════════════════════════
+  # NETWORKS & VOLUMES
+  # ════════════════════════════════════════════════════════════
+
+networks:
+  lakehouse:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  airflow_logs:
