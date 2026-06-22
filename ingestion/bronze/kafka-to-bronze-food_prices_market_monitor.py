@@ -14,7 +14,7 @@ from utilities import get_spark_session, parse_kafka_message
 
 
 KAFKA_BROKER = "kafka:9092"
-KAFKA_TOPIC = "food-price-market-monitor"
+KAFKA_TOPIC = "food_prices_market_monitor"
 
 
 if __name__ == "__main__":
@@ -64,9 +64,9 @@ if __name__ == "__main__":
 
     spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
     spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.food-price-market-monitor
+        CREATE TABLE IF NOT EXISTS bronze.food-prices-market-monitor
         USING delta
-        LOCATION 's3a://lakehouse/bronze/food-price-market-monitor'
+        LOCATION 's3a://lakehouse/bronze/food-prices-market-monitor'
     """)
     print("Starting Kafka Read Stream...")
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
 
     # Define a path for Spark to track streaming progress
-    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/food-price-market-monitor"
+    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/food-prices-market-monitor"
 
     print("Writing stream to Delta Lake...")
     delta_query = (
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         .option("checkpointLocation", CHECKPOINT_PATH)
         .trigger(processingTime="10 seconds")  # Adjust trigger interval as needed
         #.option("maxOffsetsPerTrigger", "50")
-        .start("s3a://lakehouse/bronze/food-price-market-monitor")
+        .start("s3a://lakehouse/bronze/food-prices-market-monitor")
         #.start()
     )
 

@@ -14,7 +14,7 @@ from utilities import get_spark_session, parse_kafka_message
 
 
 KAFKA_BROKER = "kafka:9092"
-KAFKA_TOPIC = "poverty-rate"
+KAFKA_TOPIC = "poverty_rate"
 
 
 if __name__ == "__main__":
