@@ -1,11 +1,10 @@
 import sys
+import os
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, from_json, regexp_replace, trim
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Dict, List, Optional
 
-import sys
-import os
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
@@ -14,34 +13,56 @@ from utilities import get_spark_session, parse_kafka_message
 
 
 KAFKA_BROKER = "kafka:9092"
-KAFKA_TOPIC = "test_data_v3"
+# Assicurati che questo sia il topic che hai usato in main_unhcr_solutions.py
+KAFKA_TOPIC = "solutions"
 
 
 if __name__ == "__main__":
-    spark = get_spark_session("KafkaToBronze")
+    spark = get_spark_session("KafkaToBronze_UNHCR_Solutions")
     #print("Clearing stale catalog metadata...")
     #spark.sql("DROP TABLE IF EXISTS default.test1")
     
-    # Define schema of expected JSON message
+    # Schema basato sul JSON dell'API UNHCR Solutions
+    # Uso StringType per gli ID e i codici perché l'API può restituire "-" al posto di null
     schema = StructType([
-        StructField("id", IntegerType(), True),
-        StructField("code", StringType(), True),
-        StructField("name", StringType(), True),
-        StructField("region", StringType(), True)
+        StructField("year", IntegerType(), True),
+        StructField("coo_id", StringType(), True),
+        StructField("coo_name", StringType(), True),
+        StructField("coo", StringType(), True),
+        StructField("coo_iso", StringType(), True),
+        StructField("coa_id", StringType(), True),
+        StructField("coa_name", StringType(), True),
+        StructField("coa", StringType(), True),
+        StructField("coa_iso", StringType(), True),
+        StructField("returned_refugees", IntegerType(), True),
+        StructField("resettlement", IntegerType(), True),
+        StructField("naturalisation", IntegerType(), True),
+        StructField("returned_idps", IntegerType(), True)
     ])
 
+    # Dizionario di mappatura: manteniamo tutti i campi
     my_fields_to_keep = {
-        "code": "location_code",
-        "name": "location_name",
-        "region": "world_region"  # You can easily add more fields like this
+        "year": "year",
+        "coo_id": "coo_id",
+        "coo_name": "coo_name",
+        "coo": "coo",
+        "coo_iso": "coo_iso",
+        "coa_id": "coa_id",
+        "coa_name": "coa_name",
+        "coa": "coa",
+        "coa_iso": "coa_iso",
+        "returned_refugees": "returned_refugees",
+        "resettlement": "resettlement",
+        "naturalisation": "naturalisation",
+        "returned_idps": "returned_idps"
     }
 
 
     spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
     spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.test_data_v3
+        CREATE TABLE IF NOT EXISTS bronze.solutions
         USING delta
-        LOCATION 's3a://lakehouse/bronze/test_data_v3'
+        LOCATION 's3a://lakehouse/bronze/solutions'
     """)
     print("Starting Kafka Read Stream...")
 
@@ -51,6 +72,7 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
+        #.option("startingOffsets", "earliest")
         .option("startingOffsets", "latest")
         .load()
     )
@@ -75,9 +97,8 @@ if __name__ == "__main__":
     )
 
 
-
     # Define a path for Spark to track streaming progress
-    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/test_data_v3"
+    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/bronze_solutions"
 
     print("Writing stream to Delta Lake...")
     delta_query = (
@@ -86,14 +107,14 @@ if __name__ == "__main__":
         .option("mergeSchema", "true")
         .outputMode("append")
         .option("checkpointLocation", CHECKPOINT_PATH)
-        .trigger(processingTime="10 seconds")  # Adjust trigger interval as needed
+        .trigger(availableNow=True)
+        #.trigger(processingTime="10 seconds")  # Adjust trigger interval as needed
         #.option("maxOffsetsPerTrigger", "50")
-        .start("s3a://lakehouse/bronze/test_data_v3")
+        .start("s3a://lakehouse/bronze/solutions")
         #.start()
     )
 
 
-    
     print("Waiting for streams to finish...")
     #spark.stop()
     # Wait for the streams to process data indefinitely
