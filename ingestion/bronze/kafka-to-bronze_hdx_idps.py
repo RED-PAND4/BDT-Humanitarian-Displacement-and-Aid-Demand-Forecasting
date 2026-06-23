@@ -69,8 +69,8 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
-        #.option("startingOffsets", "earliest") # earliest per avviare da zero, latest per processare solo nuovi dati
-        .option("startingOffsets", "latest")
+        .option("startingOffsets", "earliest") # earliest per avviare da zero, latest per processare solo nuovi dati
+        #.option("startingOffsets", "latest")
         .load()
     )
     print("Parse Kafka Read Stream...")

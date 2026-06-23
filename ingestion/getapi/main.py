@@ -52,8 +52,13 @@ def main() -> None:
         {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "offset": 0, "active": True},
         {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "offset": 0, "active": True},
         {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "offset": 0, "active": True},
-        {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "offset": 0, "active": True}
+        {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "offset": 0, "active": True},
+        {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "offset": 0, "active": True},
+        {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "offset": 0, "active": True},
+        {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "offset": 0, "active": True},
+        {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "offset": 0, "active": True}
     ]
+
 
     LIMIT = 1000
 
