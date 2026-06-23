@@ -1,7 +1,7 @@
 import sys
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, from_json, regexp_replace, trim
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, TimestampType,BooleanType
 from typing import Dict, List, Optional
 
 import sys
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         "org_type_description": "org_type_description"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
+    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
     spark.sql("""
         CREATE TABLE IF NOT EXISTS bronze.org
         USING delta
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
-        .option("startingOffsets", "latest")
+        .option("startingOffsets", "earliest")
         .load()
     )
     print("Parse Kafka Read Stream...")
@@ -67,18 +67,18 @@ if __name__ == "__main__":
     print("Starting Write Streams...")
 
     #Sink 1: Write to Console (for debugging/testing)
-    console_query = (
-        parsed_df.writeStream
-        .format("console")
-        .outputMode("append")
-        .option("truncate", "false")
-        .start()
-    )
+    # console_query = (
+    #     parsed_df.writeStream
+    #     .format("console")
+    #     .outputMode("append")
+    #     .option("truncate", "false")
+    #     .start()
+    # )
 
 
 
     # Define a path for Spark to track streaming progress
-    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/org"
+    CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/bronze/org"
 
     print("Writing stream to Delta Lake...")
     delta_query = (
@@ -87,8 +87,8 @@ if __name__ == "__main__":
         .option("mergeSchema", "true")
         .outputMode("append")
         .option("checkpointLocation", CHECKPOINT_PATH)
-        .trigger(processingTime="10 seconds")  # Adjust trigger interval as needed
-        #.option("maxOffsetsPerTrigger", "50")
+        #.trigger(processingTime="10 seconds")  # Adjust trigger interval as needed
+        .trigger(availableNow=True)         #.option("maxOffsetsPerTrigger", "50")
         .start("s3a://lakehouse/bronze/org")
         #.start()
     )
@@ -99,3 +99,8 @@ if __name__ == "__main__":
     #spark.stop()
     # Wait for the streams to process data indefinitely
     delta_query.awaitTermination()
+    
+    print("Execution complete. Explicitly shutting down Spark to release locks...")
+    spark.stop()
+    sys.exit(0)
+
