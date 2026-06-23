@@ -10,7 +10,7 @@ from utilities import get_spark_session
 spark = get_spark_session("BronzeToSilver_HDX_Needs")
 
 # 1. Read Bronze as a Stream
-bronze_df = (spark.readStream
+bronze_df = (spark.read
     .format("delta")
     #.option("inferSchema", "true")
     .load("s3a://lakehouse/bronze/humanitarian_needs"))
@@ -38,16 +38,27 @@ spark.sql("""
 """)
 
 # 3. Write to Silver using AvailableNow
-query = (deduplicated_df.writeStream
-    .format("delta")
-    .outputMode("append")
-    .option("checkpointLocation", "s3a://lakehouse/checkpoints/silver_needs")
-    .trigger(availableNow=True) # 👈 THE MAGIC TRICK: Process new data and shut down
-    .start("s3a://lakehouse/silver/humanitarian_needs"))
+# query = (deduplicated_df.writeStream
+#     .format("delta")
+#     .outputMode("append")
+#     .option("checkpointLocation", "s3a://lakehouse/checkpoints/silver_needs")
+#     .trigger(availableNow=True) # 👈 THE MAGIC TRICK: Process new data and shut down
+#     .start("s3a://lakehouse/silver/humanitarian_needs"))
 
-query.awaitTermination()
+# query.awaitTermination()
 
+# print("Taking out the trash in the Bronze layer...")
+
+# # Example A: Keep only the last 24 hours of deleted/old data
+# spark.sql("VACUUM delta.`s3a://lakehouse/bronze/humanitarian_needs` RETAIN 24 HOURS")
+# Step 2: Write data
+query= (deduplicated_df.write 
+    .format("delta") 
+    #.option("<option_name>", "<option_value>") \
+    .mode("overwrite") 
+    #.save("silver.baselinepopulation")
+    .save("s3a://lakehouse/silver/humanitarian_needs")
+
+)
+print("overwrite")
 print("Taking out the trash in the Bronze layer...")
-
-# Example A: Keep only the last 24 hours of deleted/old data
-spark.sql("VACUUM delta.`s3a://lakehouse/bronze/humanitarian_needs` RETAIN 24 HOURS")

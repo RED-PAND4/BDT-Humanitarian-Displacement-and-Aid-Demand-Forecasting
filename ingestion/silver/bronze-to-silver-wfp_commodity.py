@@ -41,13 +41,13 @@ spark.sql("""
 #     .start("s3a://lakehouse/silver/wfpcommodity"))
 
 # query.awaitTermination()
-
+print("writting")
 # Step 2: Write data
 query= (deduplicated_df.write 
     .format("delta") 
     #.option("<option_name>", "<option_value>") \
     .mode("overwrite") 
-    .saveAsTable("s3a://lakehouse/silver/wfpcommodity")
+    .save("s3a://lakehouse/silver/wfpcommodity")
 )
 
 print("Taking out the trash in the Bronze layer...")

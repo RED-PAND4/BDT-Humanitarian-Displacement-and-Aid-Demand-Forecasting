@@ -47,8 +47,11 @@ query= (deduplicated_df.write
     .format("delta") 
     #.option("<option_name>", "<option_value>") \
     .mode("overwrite") 
-    #.saveAsTable("silver.currency")
-    .saveAsTable("s3a://lakehouse/silver/currency")
+    #.save("silver.currency")
+    # .option("overwriteSchema", "true")
+    # .option("path", "s3a://lakehouse/silver/currency") \
+    # .saveAsTable("currency")
+    .save("s3a://lakehouse/silver/currency")
 
 )
 print("overwrite")

@@ -47,7 +47,7 @@ query= (deduplicated_df.write
     .format("delta") 
     #.option("<option_name>", "<option_value>") \
     .mode("append") 
-    .saveAsTable("s3a://lakehouse/silver/foodsecurity")
+    .save("s3a://lakehouse/silver/foodsecurity")
 )
 
 print("Taking out the trash in the Bronze layer...")
