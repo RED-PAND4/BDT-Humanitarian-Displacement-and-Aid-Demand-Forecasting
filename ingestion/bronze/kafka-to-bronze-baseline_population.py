@@ -50,9 +50,9 @@ if __name__ == "__main__":
         "age_range": "age_range",
         "min_age": "min_age",
         "max_age": "max_age",
-        "population": "population"
-        "reference_period_start": "start_date",
-        "reference_period_end": "end_date"
+        "population": "population",
+        "reference_period_start": "reference_period_start",
+        "reference_period_end": "reference_period_end"
     }
 
     spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")

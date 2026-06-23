@@ -47,7 +47,9 @@ if __name__ == "__main__":
         "admin1_name": "admin1_name",
         "mpi": "mpi",
         "headcount_ratio": "headcount_ratio",
-        "intensity_of_deprivation": "intensity_of_deprivation"
+        "intensity_of_deprivation": "intensity_of_deprivation",
+        "reference_period_start":"reference_period_start",
+        "reference_period_end":"reference_period_end"
         # Easily add or remove other fields from the API above as needed
     }
 

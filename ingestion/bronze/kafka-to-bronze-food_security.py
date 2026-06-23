@@ -47,7 +47,9 @@ if __name__ == "__main__":
         "ipc_phase": "ipc_phase",
         "ipc_type": "ipc_type",
         "population_in_phase": "population_in_phase",
-        "population_fraction_in_phase": "population_fraction_in_phase"
+        "population_fraction_in_phase": "population_fraction_in_phase",
+        "reference_period_start":"reference_period_start",
+        "reference_period_end":"reference_period_end"
         # Easily add or remove other fields from the API above as needed
     }   
 
