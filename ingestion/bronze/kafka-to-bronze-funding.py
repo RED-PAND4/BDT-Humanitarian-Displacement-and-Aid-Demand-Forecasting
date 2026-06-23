@@ -89,7 +89,8 @@ if __name__ == "__main__":
         .option("mergeSchema", "true")
         .outputMode("append")
         .option("checkpointLocation", CHECKPOINT_PATH)
-        .trigger(processingTime="10 seconds")
+        #.trigger(processingTime="10 seconds")
+        .trigger(availableNow=True)
         .start("s3a://lakehouse/bronze/funding")
     )
 

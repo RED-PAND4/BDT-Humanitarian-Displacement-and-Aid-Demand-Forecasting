@@ -98,7 +98,7 @@ def main() -> None:
         {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 500, "active": True}
     ]
 
-    MAX_ITERATIONS = 10  # Sicurezza per evitare cicli infiniti durante i test
+    MAX_ITERATIONS = 3  # Sicurezza per evitare cicli infiniti durante i test
     iteration_count = 0
 
     while any(api["active"] for api in api_list):
