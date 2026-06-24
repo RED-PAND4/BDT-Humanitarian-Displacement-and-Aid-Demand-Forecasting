@@ -12,7 +12,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='0_lakehouse_processing',
+    dag_id='0_getApi',
     default_args=default_args,
     #schedule=timedelta(minutes=2),
     start_date=datetime(2026, 6, 20),

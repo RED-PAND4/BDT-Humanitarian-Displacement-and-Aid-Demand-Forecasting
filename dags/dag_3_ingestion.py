@@ -9,7 +9,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='3_lakehouse_processing',
+    dag_id='3_silver_to_gold',
     default_args=default_args,
     #schedule=timedelta(minutes=5),
     start_date=datetime(2026, 6, 20),
@@ -21,7 +21,7 @@ with DAG(
     # Task D: Aggregate the data (Silver -> Gold)
     silver_to_gold = SparkSubmitOperator(
         task_id='silver_to_gold_task',
-        application='/opt/spark/jobs/gold/silver-to-gold-test1.py',
+        application='/opt/spark/jobs/gold/silver-to-gold-test2.py',
         conn_id='spark_default',
         packages='io.delta:delta-spark_2.12:3.2.0',
     )

@@ -10,7 +10,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='1_always_on_ingestion',
+    dag_id='1_kafka_to_bronze',
     default_args=default_args,
     #schedule='@once',
     start_date=datetime(2026, 6, 20),
