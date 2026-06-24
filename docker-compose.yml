@@ -371,13 +371,18 @@ services:
     environment:
       SUPERSET_SECRET_KEY: "YOUR_RANDOM_KEY_HERE"
       PYTHONPATH: "/app/pythonpath:/usr/local/lib/python3.10/site-packages"
+    volumes:
+      - ./superset_init:/configs
     command: >
       bash -c "
       superset db upgrade &&
       superset fab create-admin --username admin --firstname Admin --lastname User --email admin@lakehouse.io --password admin &&
       superset init &&
-      superset run -p 8088 -h 0.0.0.0 --with-threads
-      "
+      if [ -f '/configs/dashboard.zip' ]; then
+        echo 'Importing dashboard...' &&
+        superset import-dashboards -p /configs/dashboard.zip -u admin
+      fi &&
+      superset run -p 8088 -h 0.0.0.0 --with-threads"
     depends_on:
       - trino
     networks:
