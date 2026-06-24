@@ -30,7 +30,7 @@ def load_expanded_silver_tables(spark):
     
     # 3. HDX HAPI Infrastructure & Finance
     population_df = spark.read.format("delta").load(f"{base}/baselinepopulation")
-    funding_df = spark.read.format("delta").load("s3a://lakehouse/bronze/funding") 
+    funding_df = spark.read.format("delta").load("s3a://lakehouse/bronze/funding") #terporanep
     
     return refugees_df, idps_df, conflict_df, food_sec_df, poverty_df, population_df, funding_df
 
@@ -119,13 +119,73 @@ def process_dimensions_and_facts(refugees_df, idps_df, conflict_df, food_sec_df,
     
 #     return final_matrix
 
+# def calculate_advanced_metrics(fact_df, dim_df):
+#     """Applies Forecasting and K-Means Clustering to create the Unified Dashboard Matrix."""
+    
+#     # Join Facts and Dimensions for modeling
+#     unified_df = fact_df.join(dim_df, ["location_code", "year"], "inner")
+    
+#     # 1. Forecasting: Year-Over-Year Velocity
+#     window_spec = Window.partitionBy("location_code").orderBy("year")
+#     unified_df = unified_df.withColumn("prev_burden", F.lag("total_displaced_burden", 1).over(window_spec)) \
+#         .withColumn("growth_rate", 
+#                     F.when(F.col("prev_burden") > 0, (F.col("total_displaced_burden") - F.col("prev_burden")) / F.col("prev_burden"))
+#                      .otherwise(0.0)) \
+#         .withColumn("forecasted_burden_next_year", F.greatest(F.col("total_displaced_burden") * (1 + F.col("growth_rate")), F.lit(0.0)))
+    
+#     # --- FIX STARTS HERE ---
+#     features = ["total_displaced_burden", "conflict_events", "avg_food_phase", "multidimensional_poverty_index", "funding_per_capita"]
+    
+#     # Ensure all ML features are strictly numerical (Double) and explicitly drop any remaining Nulls/NaNs
+#     for col_name in features:
+#         unified_df = unified_df.withColumn(col_name, F.col(col_name).cast("double"))
+    
+#     # Spark MLlib will crash if any nulls remain. This is a hard requirement before VectorAssembler.
+#     ml_ready_df = unified_df.dropna(subset=features)
+    
+#     # 2. Machine Learning: Risk Clustering
+#     # Added handleInvalid="skip" as a safeguard. If a malformed row arrives, Spark skips it instead of failing the job.
+#     assembler = VectorAssembler(inputCols=features, outputCol="raw_features", handleInvalid="skip")
+#     assembled_df = assembler.transform(ml_ready_df)
+    
+#     scaler = StandardScaler(inputCol="raw_features", outputCol="features", withStd=True, withMean=True)
+    
+#     # The fit() method will now execute safely over cleaned, strictly double-typed data.
+#     scaler_model = scaler.fit(assembled_df)
+#     scaled_df = scaler_model.transform(assembled_df)
+#     # --- FIX ENDS HERE ---
+    
+#     # K-Means to identify 4 operational archetypes
+#     kmeans = KMeans(featuresCol="features", predictionCol="risk_cluster", k=4, seed=42)
+#     clustered_df = kmeans.fit(scaled_df).transform(scaled_df).drop("raw_features", "features", "prev_burden")
+    
+#     # 3. Prioritization Rank
+#     clustered_df = clustered_df.withColumn(
+#         "pressure_score",
+#         (F.col("total_displaced_burden") / F.col("total_host_population")) * 1000 + 
+#         (F.col("conflict_events") * 0.5) +
+#         (F.col("avg_food_phase") * 10) -
+#         (F.col("funding_per_capita") * 0.1)
+#     )
+    
+#     rank_window = Window.partitionBy("year").orderBy(F.col("pressure_score").desc())
+#     final_matrix = clustered_df.withColumn("global_priority_rank", F.dense_rank().over(rank_window))
+    
+#     return final_matrix
 def calculate_advanced_metrics(fact_df, dim_df):
     """Applies Forecasting and K-Means Clustering to create the Unified Dashboard Matrix."""
     
-    # Join Facts and Dimensions for modeling
+    # --- DIAGNOSTIC FIX 1: Enforce Join Key Types ---
+    # Mismatched types (String vs Int) will cause an empty dataframe on join.
+    fact_df = fact_df.withColumn("year", F.col("year").cast("integer")) \
+                     .withColumn("location_code", F.col("location_code").cast("string"))
+    dim_df = dim_df.withColumn("year", F.col("year").cast("integer")) \
+                   .withColumn("location_code", F.col("location_code").cast("string"))
+
+    # Join Facts and Dimensions
     unified_df = fact_df.join(dim_df, ["location_code", "year"], "inner")
     
-    # 1. Forecasting: Year-Over-Year Velocity
+    # Forecasting: Year-Over-Year Velocity
     window_spec = Window.partitionBy("location_code").orderBy("year")
     unified_df = unified_df.withColumn("prev_burden", F.lag("total_displaced_burden", 1).over(window_spec)) \
         .withColumn("growth_rate", 
@@ -133,27 +193,40 @@ def calculate_advanced_metrics(fact_df, dim_df):
                      .otherwise(0.0)) \
         .withColumn("forecasted_burden_next_year", F.greatest(F.col("total_displaced_burden") * (1 + F.col("growth_rate")), F.lit(0.0)))
     
-    # --- FIX STARTS HERE ---
     features = ["total_displaced_burden", "conflict_events", "avg_food_phase", "multidimensional_poverty_index", "funding_per_capita"]
     
-    # Ensure all ML features are strictly numerical (Double) and explicitly drop any remaining Nulls/NaNs
+    # --- DIAGNOSTIC FIX 2: Sanitize Infinities and NaNs ---
     for col_name in features:
-        unified_df = unified_df.withColumn(col_name, F.col(col_name).cast("double"))
+        unified_df = unified_df.withColumn(
+            col_name,
+            F.when(F.col(col_name).isin([float("inf"), float("-inf"), float("nan")]), 0.0)
+             .otherwise(F.col(col_name).cast("double"))
+        )
     
-    # Spark MLlib will crash if any nulls remain. This is a hard requirement before VectorAssembler.
     ml_ready_df = unified_df.dropna(subset=features)
     
+    # --- DIAGNOSTIC FIX 3: Break Lazy Evaluation ---
+    # We cache and count the dataframe. If the error happens HERE, the issue is an S3/Delta read error.
+    # If the count is 0, the issue is your join logic.
+    ml_ready_df.cache()
+    row_count = ml_ready_df.count()
+    
+    if row_count == 0:
+        raise ValueError(
+            "CRITICAL PIPELINE ERROR: The DataFrame has 0 rows before entering the ML pipeline. "
+            "Check your Silver layer tables: the 'location_code' or 'year' values are not matching between "
+            "the UNHCR API and HDX API datasets."
+        )
+        
+    print(f"Data validation passed. Proceeding to ML pipeline with {row_count} rows.")
+    
     # 2. Machine Learning: Risk Clustering
-    # Added handleInvalid="skip" as a safeguard. If a malformed row arrives, Spark skips it instead of failing the job.
     assembler = VectorAssembler(inputCols=features, outputCol="raw_features", handleInvalid="skip")
     assembled_df = assembler.transform(ml_ready_df)
     
     scaler = StandardScaler(inputCol="raw_features", outputCol="features", withStd=True, withMean=True)
-    
-    # The fit() method will now execute safely over cleaned, strictly double-typed data.
     scaler_model = scaler.fit(assembled_df)
     scaled_df = scaler_model.transform(assembled_df)
-    # --- FIX ENDS HERE ---
     
     # K-Means to identify 4 operational archetypes
     kmeans = KMeans(featuresCol="features", predictionCol="risk_cluster", k=4, seed=42)
@@ -197,16 +270,25 @@ if __name__ == "__main__":
     # 1. Extract
     datasets = load_expanded_silver_tables(spark)
     
+        
     # 2. Transform into Star Schema
     fact_displacement, dim_vulnerability = process_dimensions_and_facts(*datasets)
+    # --- TEMPORARY DEBUGGING PRINT ---
+    print("=== FACT DISPLACEMENT SAMPLE ===")
+    fact_displacement.select("location_code", "year").distinct().show(5, truncate=False)
+    fact_displacement.printSchema()
+
+    print("=== DIM VULNERABILITY SAMPLE ===")
+    dim_vulnerability.select("location_code", "year").distinct().show(5, truncate=False)
+    dim_vulnerability.printSchema()
     
     # 3. Apply AI/ML and Forecasting to build the Master View
-    #dashboard_master_matrix = calculate_advanced_metrics(fact_displacement, dim_vulnerability)
+    dashboard_master_matrix = calculate_advanced_metrics(fact_displacement, dim_vulnerability)
     
     # 4. Load multiple tables to Gold Database
     # Storing separate tables allows your dashboard to be highly performant and modular
     write_to_gold(fact_displacement, "fact_displacement_funding")
     write_to_gold(dim_vulnerability, "dim_country_vulnerability")
-    #write_to_gold(dashboard_master_matrix, "dashboard_unified_priority_matrix")
+    write_to_gold(dashboard_master_matrix, "dashboard_unified_priority_matrix")
     
     print("Dashboard data model successfully saved to Gold.")

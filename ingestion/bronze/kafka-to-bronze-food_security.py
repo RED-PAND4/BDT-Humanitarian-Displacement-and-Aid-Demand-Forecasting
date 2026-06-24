@@ -46,6 +46,7 @@ if __name__ == "__main__":
         "location_name": "location_name",
         "ipc_phase": "ipc_phase",
         "ipc_type": "ipc_type",
+        "resource_hdx_id": "resource_hdx_id",
         "population_in_phase": "population_in_phase",
         "population_fraction_in_phase": "population_fraction_in_phase",
         "reference_period_start":"reference_period_start",

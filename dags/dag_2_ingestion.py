@@ -118,7 +118,31 @@ with DAG(
         conn_id='spark_default',
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
+    bronze_to_silver_ce = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_ce',
+        application='/opt/spark/jobs/silver/bronze-to-silver-conflict_events.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+    bronze_to_silver_fun = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_fun',
+        application='/opt/spark/jobs/silver/bronze-to-silver-funding.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+    bronze_to_silver_nr = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_nr',
+        application='/opt/spark/jobs/silver/bronze-to-silver-national_risk.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+    bronze_to_silver_op = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_op',
+        application='/opt/spark/jobs/silver/bronze-to-silver-operational_presence.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
 
     
-    [bronze_to_silver_bp, bronze_to_silver_currency, bronze_to_silver_fpmm, bronze_to_silver_fs, bronze_to_silver_location, bronze_to_silver_ot, bronze_to_silver_org, bronze_to_silver_pr, bronze_to_silver_sector, bronze_to_silver_wfpc, bronze_to_silver_wfpm,silver_needs, silver_idps, silver_pop, silver_sol ]
-    #bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm
+    #[bronze_to_silver_bp, bronze_to_silver_currency, bronze_to_silver_fpmm, bronze_to_silver_fs, bronze_to_silver_location, bronze_to_silver_ot, bronze_to_silver_org, bronze_to_silver_pr, bronze_to_silver_sector, bronze_to_silver_wfpc, bronze_to_silver_wfpm,silver_needs, silver_idps, silver_pop, silver_sol ]
+    bronze_to_silver_op>>bronze_to_silver_nr>>bronze_to_silver_ce>>bronze_to_silver_fun>>bronze_to_silver_bp>>bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm

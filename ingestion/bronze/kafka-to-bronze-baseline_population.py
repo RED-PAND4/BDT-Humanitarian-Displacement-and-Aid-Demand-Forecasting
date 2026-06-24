@@ -46,6 +46,7 @@ if __name__ == "__main__":
     my_fields_to_keep = {
         "location_code": "location_code",
         "location_name": "location_name",
+        "resource_hdx_id": "resource_hdx_id",
         "gender": "gender",
         "age_range": "age_range",
         "min_age": "min_age",

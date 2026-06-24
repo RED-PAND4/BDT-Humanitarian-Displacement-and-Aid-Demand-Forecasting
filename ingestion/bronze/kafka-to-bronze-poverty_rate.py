@@ -46,6 +46,7 @@ if __name__ == "__main__":
         "admin1_code": "admin1_code",
         "admin1_name": "admin1_name",
         "mpi": "mpi",
+        "resource_hdx_id": "resource_hdx_id",
         "headcount_ratio": "headcount_ratio",
         "intensity_of_deprivation": "intensity_of_deprivation",
         "reference_period_start":"reference_period_start",

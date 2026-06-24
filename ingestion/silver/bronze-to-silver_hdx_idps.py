@@ -28,7 +28,8 @@ deduplicated_df = cleaned_df.dropDuplicates([
     "assessment_type", 
     "reporting_round", 
     "operation", 
-    "reference_period_start"
+    "reference_period_start",
+    "population"
 ])
 
 spark.sql("CREATE DATABASE IF NOT EXISTS silver")
