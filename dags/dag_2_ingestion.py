@@ -9,7 +9,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='2_lakehouse_processing',
+    dag_id='2_bronze_to_silver',
     default_args=default_args,
     #schedule=timedelta(minutes=1), 
     start_date=datetime(2026, 6, 20),
