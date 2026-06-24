@@ -59,6 +59,7 @@ if __name__ == "__main__":
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
         .option("startingOffsets", "earliest")
+        .option("failOnDataLoss", "false")
         .load()
     )
     print("Parse Kafka Read Stream...")

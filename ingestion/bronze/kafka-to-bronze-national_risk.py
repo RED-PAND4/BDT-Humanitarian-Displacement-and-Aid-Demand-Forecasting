@@ -60,6 +60,7 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
+        .option("failOnDataLoss", "false")
         .option("startingOffsets", "earliest")
         .load()
     )
@@ -74,13 +75,7 @@ if __name__ == "__main__":
 
     print("Starting Write Streams...")
 
-    console_query = (
-        parsed_df.writeStream
-        .format("console")
-        .outputMode("append")
-        .option("truncate", "false")
-        .start()
-    )
+
 
     CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/national_risk"
 

@@ -10,10 +10,8 @@ sys.path.append(parent_dir)
 
 from utilities import get_spark_session, parse_kafka_message
 
-
 KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "conflict_events"
-
 
 if __name__ == "__main__":
     spark = get_spark_session("KafkaToBronze-ConflictEvents")
@@ -46,12 +44,13 @@ if __name__ == "__main__":
         "reference_period_end": "reference_period_end"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
+    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
     spark.sql("""
         CREATE TABLE IF NOT EXISTS bronze.conflict_events
         USING delta
         LOCATION 's3a://lakehouse/bronze/conflict_events'
     """)
+
     print("Starting Kafka Read Stream...")
 
     raw_df = (
@@ -59,6 +58,7 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
+        .option("failOnDataLoss", "false")
         .option("startingOffsets", "earliest")
         .load()
     )
@@ -69,31 +69,22 @@ if __name__ == "__main__":
         schema=schema,
         fields_mapping=my_fields_to_keep
     )
-    target_columns = list(my_fields_to_keep.values())
 
     print("Starting Write Streams...")
 
-    console_query = (
-        parsed_df.writeStream
-        .format("console")
-        .outputMode("append")
-        .option("truncate", "false")
-        .start()
-    )
-
     CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/conflict_events"
 
-    print("Writing stream to Delta Lake...")
+    print("Writing stream to Delta Lake Bronze...")
     delta_query = (
         parsed_df.writeStream
         .format("delta")
         .option("mergeSchema", "true")
         .outputMode("append")
         .option("checkpointLocation", CHECKPOINT_PATH)
-        #.trigger(processingTime="10 seconds")
         .trigger(availableNow=True)
         .start("s3a://lakehouse/bronze/conflict_events")
     )
 
     print("Waiting for streams to finish...")
     delta_query.awaitTermination()
+    spark.stop()

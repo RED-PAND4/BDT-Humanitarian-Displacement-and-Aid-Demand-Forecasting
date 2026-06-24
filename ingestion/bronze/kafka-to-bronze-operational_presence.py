@@ -81,6 +81,7 @@ if __name__ == "__main__":
         .format("console")
         .outputMode("append")
         .option("truncate", "false")
+        .option("failOnDataLoss", "false")
         .start()
     )
 
