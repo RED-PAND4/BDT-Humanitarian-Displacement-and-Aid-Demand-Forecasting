@@ -8,7 +8,7 @@
 
 ```bash
 git clone <repo-url>
-cd click_stream_lakehouse
+cd BDT-Humanitarian-Displacement-and-Aid-Demand-Forecasting
 ```
 
 ### 2. Configure environment variables
