@@ -20,17 +20,7 @@ deduplicated_df = cleaned_df.dropDuplicates(keys)
 # 3. Create Silver database and table
 spark.sql("CREATE DATABASE IF NOT EXISTS silver LOCATION 's3a://lakehouse/silver'")
 spark.sql("""
-    CREATE TABLE IF NOT EXISTS silver.conflict_events (
-        location_code STRING,
-        location_name STRING,
-        admin1_name STRING,
-        admin2_name STRING,
-        event_type STRING,
-        events INT,
-        fatalities INT,
-        reference_period_start STRING,
-        reference_period_end STRING
-    )
+    CREATE TABLE IF NOT EXISTS silver.conflict_events
     USING delta
     LOCATION 's3a://lakehouse/silver/conflict_events'
 """)

@@ -25,7 +25,7 @@ def get_spark_session(name: StringType) -> SparkSession:
         .config("spark.hadoop.fs.s3a.access.key", "minioadmin")
         .config("spark.hadoop.fs.s3a.secret.key", "minioadmin")
         # Required for local S3 alternatives like MinIO
-        .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000") # Replace with your MinIO IP/Port
+        .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
         .config("spark.sql.shuffle.partitions", "2")
@@ -57,7 +57,7 @@ def parse_kafka_message(df: DataFrame, schema: StructType, fields_mapping: Dict[
     )
 
     # 2. Dynamically build the select expressions based on the mapping dictionary
-    # This translates to: [col("data.code").alias("location_code"), col("data.name").alias("location_name"), ...]
+    # This is sames as: [col("data.code").alias("location_code"), col("data.name").alias("location_name"), ...]
     select_exprs = [
         col(f"data.{json_field}").alias(new_col_name)
         for json_field, new_col_name in fields_mapping.items()

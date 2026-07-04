@@ -21,15 +21,6 @@ deduplicated_df = cleaned_df.dropDuplicates(keys)
 # 3. Create database and table in silver (if they don't exist)
 spark.sql("CREATE DATABASE IF NOT EXISTS silver LOCATION 's3a://lakehouse/silver'")
 spark.sql("CREATE TABLE IF NOT EXISTS silver.operational_presence USING delta LOCATION 's3a://lakehouse/silver/operational_presence'")
-# 3. Write to Silver using AvailableNow
-# query = (deduplicated_df.writeStream
-#     .format("delta")
-#     .outputMode("append")
-#     .option("checkpointLocation", "s3a://lakehouse/checkpoints/silver/currency")
-#     .trigger(availableNow=True) # 👈 THE MAGIC TRICK: Process new data and shut down
-#     .start("s3a://lakehouse/silver/currency"))
-
-# query.awaitTermination()
 
 # 4. Final batch write with overwrite to remove historical duplicates
 query = deduplicated_df.write.format("delta").mode("overwrite").save("s3a://lakehouse/silver/operational_presence")

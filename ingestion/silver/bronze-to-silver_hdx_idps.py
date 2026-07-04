@@ -22,7 +22,7 @@ bronze_df = (spark.read
 cleaned_df = bronze_df.dropna(subset=["location_code", "location_name"])
 
 # Drop duplicates based on a unique ID or code
-# Note: Streaming deduplication requires a watermark, or you can use standard batch read/writes if you prefer
+
 deduplicated_df = cleaned_df.dropDuplicates([
     "location_code", 
     "assessment_type", 
@@ -39,28 +39,13 @@ spark.sql("""
     LOCATION 's3a://lakehouse/silver/idps'
 """)
 
-# 3. Write to Silver using AvailableNow
-# query = (deduplicated_df.writeStream
-#     .format("delta")
-#     .outputMode("append")
-#     .option("checkpointLocation", "s3a://lakehouse/checkpoints/silver_idps")
-#     .trigger(availableNow=True) # 👈 THE MAGIC TRICK: Process new data and shut down
-#     .start("s3a://lakehouse/silver/idps"))
-
-# query.awaitTermination()
-
-# print("Taking out the trash in the Bronze layer...")
-
-# # Example A: Keep only the last 24 hours of deleted/old data
-# spark.sql("VACUUM delta.`s3a://lakehouse/bronze/idps` RETAIN 24 HOURS")
-# Step 2: Write data
+# 3. Write to Silver 
 query= (deduplicated_df.write 
     .format("delta") 
-    #.option("<option_name>", "<option_value>") \
     .mode("overwrite") 
-    #.save("silver.baselinepopulation")
     .save("s3a://lakehouse/silver/idps")
 
 )
-print("overwrite")
-print("Taking out the trash in the Bronze layer...")
+
+#print("Taking out the trash in the Bronze layer...")
+# spark.sql("VACUUM delta.`s3a://lakehouse/bronze/idps` RETAIN 24 HOURS")

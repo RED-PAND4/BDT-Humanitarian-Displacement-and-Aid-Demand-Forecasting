@@ -22,7 +22,7 @@ bronze_df = (spark.read
 cleaned_df = bronze_df.dropna(subset=["market_code","commodity_code"])
 
 # Drop duplicates based on the unique location code from the API
-# Note: Streaming deduplication requires a watermark, or you can use standard batch read/writes if you prefer
+
 deduplicated_df = cleaned_df.dropDuplicates(subset=["market_code","commodity_code"])
 
 spark.sql("CREATE DATABASE IF NOT EXISTS silver LOCATION 's3a://lakehouse/silver'")
@@ -32,25 +32,14 @@ spark.sql("""
     LOCATION 's3a://lakehouse/silver/foodpricesmarketmonitor'
 """)
 
-# 3. Write to Silver using AvailableNow
-# query = (deduplicated_df.writeStream
-#     .format("delta")
-#     .outputMode("append")
-#     .option("checkpointLocation", "s3a://lakehouse/checkpoints/silver/foodpricesmarketmonitor")
-#     .trigger(availableNow=True) # 👈 THE MAGIC TRICK: Process new data and shut down
-#     .start("s3a://lakehouse/silver/foodpricesmarketmonitor"))
-
-# query.awaitTermination()
-
-# Step 2: Write data
+# 3. Write to Silver 
 query= (deduplicated_df.write 
     .format("delta") 
-    #.option("<option_name>", "<option_value>") \
     .mode("append") 
     .save("s3a://lakehouse/silver/foodpricesmarketmonitor")
 )
 
-print("Taking out the trash in the Bronze layer...")
+#print("Taking out the trash in the Bronze layer...")
 
-# Example A: Keep only the last 1 hours of deleted/old data
+#Keep only the last 1 hours of deleted/old data
 #spark.sql("VACUUM delta.`s3a://lakehouse/bronze/currency` RETAIN 1 HOURS")

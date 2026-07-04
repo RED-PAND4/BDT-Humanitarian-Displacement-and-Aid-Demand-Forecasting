@@ -57,7 +57,8 @@ def fetch_data_api(endpoint: Optional[str] = None, params: Optional[Dict[str, An
     url = endpoint or os.environ.get("API_URL", DEFAULT_API)
     url = add_hapi_app_identifier(url)
     response = requests.get(url, params=params or {})
-    #print(response.json())
+    print("-----------------respones----------------------------")
+    print(params)
     response.raise_for_status()
     return response.json()
 
@@ -99,30 +100,31 @@ def extract_records(response: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def fetch_and_publish(topic: Optional[str] = None,endpoint: Optional[str] = None,params: Optional[Dict[str, Any]] = None,) -> Dict[str, Any]:
-
+    print("starting.....")
     topic_name = topic or os.environ.get("API_TOPIC", "tester")
-
+    print("topic creation")
     ensure_topics([
         {"name": topic_name, "partitions": 1, "replication": 1},
     ])
-
+    print("fetch api")
     response = fetch_data_api(
         endpoint=endpoint,
         params=params
     )
-
+    print("unpacking....")
     records = extract_records(response)
     #print(records)
 
     total_size = 0
-
+    print("writing to kafka")
     for record in records:
-        print("----------------record----------------")
-        print(record)
-        print("----------------record----------------")
+        # print("----------------record----------------")
+        # print(record)
+        # print("----------------record----------------")
         publish_to_kafka(topic_name, record)
         total_size += len(json.dumps(record))
 
+    #print("topic": topic_name, "records_published": len(records),"total_size": total_size)
     return {
         "topic": topic_name,
         "records_published": len(records),
