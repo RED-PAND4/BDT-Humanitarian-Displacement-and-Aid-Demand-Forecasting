@@ -1,5 +1,6 @@
 import sys
 import os
+import argparse
 try:
     from kafka.api_kafka_utils import fetch_and_publish, fetch_data_api
 except ImportError:
@@ -7,111 +8,46 @@ except ImportError:
     from kafka.api_kafka_utils import fetch_and_publish, fetch_data_api
 
 def main() -> None:
+
+    # 1. Set up the argument parser
+    parser = argparse.ArgumentParser(description="Fetch API data for a range of years.")
+    parser.add_argument("--year_from", type=int, required=True, help="The starting year")
+    parser.add_argument("--year_to", type=int, required=True, help="The ending year")
     
-    # Lista delle API con il loro stato e offset iniziale
-    # api_list = [
-    #     {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "food_security", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-security",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population",  "current": 0, "limit": 1000, "active": True},
-    #     {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/",  "current": 0, "limit": 1000, "active": True},
-    # ]
-
-
-    # result1 = fetch_and_publish(topic= "population", endpoint="https://api.unhcr.org/population/v1/population/", params={"limit": 1000})
-    # print(result1)
-    # result2=fetch_and_publish(topic="solutions", endpoint="https://api.unhcr.org/population/v1/solutions/", params={"limit": 1000})
-    # print(result2)
-
-    # LIMIT = 1000
-
-    # # --- CONFIGURAZIONE DI SICUREZZA ---
-    # MAX_ITERATIONS = 5  # Imposta qui quante volte al massimo il ciclo intero può girare
-    # iteration_count = 0
-    # forced_stop = False
-
-    # # Il ciclo continua finché c'è un'API attiva E non abbiamo superato il limite di iterazioni
-    # while any(api["active"] for api in api_list):
-    #     iteration_count += 1
-        
-    #     # Controllo di sicurezza: interrompi se abbiamo fatto troppi giri
-    #     if iteration_count > MAX_ITERATIONS:
-    #         print(f"\n⚠️ ATTENZIONE: Raggiunto il limite massimo di {MAX_ITERATIONS} iterazioni. Blocco di sicurezza attivato.")
-    #         forced_stop = True
-    #         break
-            
-    #     print(f"=== INIZIO ITERAZIONE DI GRUPPO N. {iteration_count} ===")
-        
-    #     for api in api_list:
-    #         if not api["active"]:
-    #             continue
-                
-    #         print(f"Estrazione in corso: {api['topic']} (Offset: {api['offset']})")
-            
-    #         current_params = {
-    #             "limit": LIMIT,
-    #             "offset": api["offset"]
-    #         }
-            
-    #         # Chiamata alla tua funzione
-    #         result = fetch_and_publish(
-    #             topic=api["topic"], 
-    #             endpoint=api["endpoint"], 
-    #             params=current_params
-    #         )
-            
-    #         num_records = result.get("records_published", 0) if result else 0
-    #         print(f"-> Pubblicati {num_records} record per {api['topic']}.")
-            
-    #         if num_records < LIMIT:
-    #             print(f"✓ {api['topic']} ha terminato tutti i dati. Disattivazione.\n")
-    #             api["active"] = False
-    #         else:
-    #             api["offset"] += LIMIT
-    #             print(f"↻ {api['topic']} continua al prossimo ciclo.\n")
-
-    # # Messaggio finale differenziato a seconda di come è terminato il ciclo
-    # if forced_stop:
-    #     print("Processo interrotto prematuramente dal limite di sicurezza.")
-    # else:
-    #     print("Tutte le API hanno terminato l'estrazione con successo (entro i limiti stabiliti).")
-
+    # 2. Parse the arguments coming from Airflow
+    args = parser.parse_args()
+    
+    # 3. Use them in your code as native integers
+    start_year = args.year_from
+    end_year = args.year_to
+    
+    print(f"Starting API extraction from {start_year} to {end_year}...")
+    
+   
     #--- API a OFFSET (HumData) ---
     api_list = [
-        {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "food_security", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-security", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 500, "active": True},
-        {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 500, "active": True}
+        # {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "food_security", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-security", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        # {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        # {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
+        # {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True}
     ]
 
-    MAX_ITERATIONS = 15  # Sicurezza per evitare cicli infiniti durante i test
+    MAX_ITERATIONS = 99  # Sicurezza per evitare cicli infiniti durante i test
     iteration_count = 0
 
     while any(api["active"] for api in api_list):
@@ -131,15 +67,16 @@ def main() -> None:
             
             if api["pagination_type"] == "offset":
                 current_params["offset"] = api["current"]
-                current_params["start_date"] = "2021"
-                current_params["end_date"] = "2025"
+                current_params["start_date"] = str(start_year)
+                current_params["end_date"] = str(end_year)
                 print(f"Estrazione {api['topic']} -> Tipo: Offset, Valore: {api['current']}")
                 
             elif api["pagination_type"] == "page":
                 current_params["page"] = api["current"]
                 current_params["coa_all"] = True
-                current_params["yearFrom"] = 2021
-                current_params["yearTo"] = 2025
+                current_params["coo_all"] = True
+                current_params["yearFrom"] = start_year
+                current_params["yearTo"] = end_year
                 print(f"Estrazione {api['topic']} -> Tipo: Pagina, Valore: {api['current']}")
             
             # 2. Eseguiamo la chiamata

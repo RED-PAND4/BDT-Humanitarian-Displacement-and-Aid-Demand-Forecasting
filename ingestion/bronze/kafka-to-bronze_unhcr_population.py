@@ -1,7 +1,7 @@
 import sys
 import os
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, from_json, regexp_replace, trim
+from pyspark.sql.functions import col, from_json, regexp_replace, trim, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Dict, List, Optional
 
@@ -37,10 +37,10 @@ if __name__ == "__main__":
         StructField("returned_refugees", IntegerType(), True),
         StructField("idps", IntegerType(), True),
         StructField("returned_idps", IntegerType(), True),
-        StructField("stateless", StringType(), True), # Nel JSON è "0" o testo
+        StructField("stateless", IntegerType(), True), # Nel JSON è "0" o testo
         StructField("ooc", IntegerType(), True),
         StructField("oip", StringType(), True),       # Nel JSON c'è spesso "-"
-        StructField("hst", StringType(), True)        # Nel JSON è "0" o testo
+        StructField("hst", IntegerType(), True)        # Nel JSON è "0" o testo
     ])
 
     # Dizionario di mappatura: manteniamo tutti i campi
@@ -91,7 +91,12 @@ if __name__ == "__main__":
         schema=schema,
         fields_mapping=my_fields_to_keep
     )
-    target_columns = list(my_fields_to_keep.values())
+    ## target_columns = list(my_fields_to_keep.values())
+    parsed_df = parsed_df.withColumn("ingested_at", current_timestamp())
+    
+    
+    # 3. Updated target columns list to include the new column
+    target_columns = list(my_fields_to_keep.values()) + ["ingested_at"]
 
     print("Starting Write Streams...")
 

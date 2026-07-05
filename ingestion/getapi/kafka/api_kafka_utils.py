@@ -72,7 +72,7 @@ def publish_to_kafka(topic: str, payload: Dict[str, Any]) -> None:
             raise RuntimeError(f"Kafka publish failed: {err}")
 
     producer.produce(topic, payload_bytes, callback=delivery_report)
-    producer.flush(10)
+    producer.flush()
 
 
 def extract_records(response: Dict[str, Any]) -> List[Dict[str, Any]]:

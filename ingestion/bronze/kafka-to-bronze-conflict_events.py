@@ -1,6 +1,6 @@
 import sys
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, from_json, regexp_replace, trim
+from pyspark.sql.functions import col, from_json, regexp_replace, trim, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Dict, List, Optional
 import os
@@ -69,6 +69,12 @@ if __name__ == "__main__":
         schema=schema,
         fields_mapping=my_fields_to_keep
     )
+    # target_columns = list(my_fields_to_keep.values())
+    parsed_df = parsed_df.withColumn("ingested_at", current_timestamp())
+    
+    
+    # 3. Updated target columns list to include the new column
+    target_columns = list(my_fields_to_keep.values()) + ["ingested_at"]
 
     print("Starting Write Streams...")
 
