@@ -53,22 +53,34 @@ if __name__ == "__main__":
     my_fields_to_keep = {
         "location_code": "location_code",
         "location_name": "location_name",
+        "admin1_code": "admin1_code",
+        "admin1_name": "admin1_name",
+        "admin2_code": "admin2_code",
+        "admin2_name": "admin2_name",
+        "admin_level": "admin_level",
+        "resource_hdx_id": "resource_hdx_id",
         "market_code": "market_code",
         "market_name": "market_name",
         "commodity_code": "commodity_code",
         "commodity_name": "commodity_name",
+        "commodity_category": "commodity_category",
+        "currency_code": "currency_code",
+        "unit": "unit",
+        "price_flag": "price_flag",
+        "price_type": "price_type",
         "price": "price",
         "lat": "lat",
-        "lon": "lon"
+        "lon": "lon",
+        "reference_period_start": "reference_period_start",
+        "reference_period_end": "reference_period_end"
         # Add or remove other fields from the API as needed
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.foodpricesmarketmonitor
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/foodpricesmarketmonitor'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="foodpricesmarketmonitor"
+    )
     print("Starting Kafka Read Stream...")
 
     # Read stream from Kafka topic

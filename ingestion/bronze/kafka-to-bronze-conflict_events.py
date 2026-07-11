@@ -35,8 +35,12 @@ if __name__ == "__main__":
     my_fields_to_keep = {
         "location_code": "location_code",
         "location_name": "location_name",
+        "admin1_code": "admin1_code",
         "admin1_name": "admin1_name",
+        "admin2_code": "admin2_code",
         "admin2_name": "admin2_name",
+        "admin_level": "admin_level",
+        "resource_hdx_id": "resource_hdx_id",
         "event_type": "event_type",
         "events": "events",
         "fatalities": "fatalities",
@@ -44,12 +48,11 @@ if __name__ == "__main__":
         "reference_period_end": "reference_period_end"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.conflict_events
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/conflict_events'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="conflict_events"
+    )
 
     print("Starting Kafka Read Stream...")
 

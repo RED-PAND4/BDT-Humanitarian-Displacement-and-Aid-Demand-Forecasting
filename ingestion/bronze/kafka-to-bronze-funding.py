@@ -33,6 +33,7 @@ if __name__ == "__main__":
     ])
 
     my_fields_to_keep = {
+        "resource_hdx_id": "resource_hdx_id",
         "location_code": "location_code",
         "location_name": "location_name",
         "appeal_code": "appeal_code",
@@ -45,12 +46,11 @@ if __name__ == "__main__":
         "reference_period_end": "reference_period_end"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.funding
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/funding'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="funding"
+    )
     print("Starting Kafka Read Stream...")
 
     raw_df = (

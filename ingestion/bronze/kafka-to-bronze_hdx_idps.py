@@ -47,6 +47,7 @@ if __name__ == "__main__":
         "admin2_code": "admin2_code",
         "admin2_name": "admin2_name",
         "admin_level": "admin_level",
+        "resource_hdx_id": "resource_hdx_id",
         "reporting_round": "reporting_round",
         "assessment_type": "assessment_type",
         "operation": "operation",
@@ -55,12 +56,11 @@ if __name__ == "__main__":
         "reference_period_end": "reference_period_end"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.idps
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/idps'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="idps"
+    )
     print("Starting Kafka Read Stream...")
 
     # Read stream from Kafka topic

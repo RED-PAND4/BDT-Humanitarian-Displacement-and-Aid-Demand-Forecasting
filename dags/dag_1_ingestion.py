@@ -161,4 +161,4 @@ with DAG(
         packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.8,io.delta:delta-spark_2.12:3.2.0',
     )
 
-    kafka_to_bronze_nr>>kafka_to_bronze_fun>>kafka_to_bronze_ce>>kafka_to_bronze_bp>>kafka_to_bronze_currency>>kafka_to_bronze_fpmm>>kafka_to_bronze_fs>>kafka_to_bronze_location>>kafka_to_bronze_ot>>kafka_to_bronze_org>>kafka_to_bronze_pr>>kafka_to_bronze_sector>>kafka_to_bronze_wfpc>>kafka_to_bronze_wfpm>>kafka_to_bronze_needs>>kafka_to_bronze_idps>>kafka_to_bronze_pop>>kafka_to_bronze_sol
+    kafka_to_bronze_nr>>kafka_to_bronze_op>>kafka_to_bronze_fun>>kafka_to_bronze_ce>>kafka_to_bronze_bp>>kafka_to_bronze_currency>>kafka_to_bronze_fpmm>>kafka_to_bronze_fs>>kafka_to_bronze_location>>kafka_to_bronze_ot>>kafka_to_bronze_org>>kafka_to_bronze_pr>>kafka_to_bronze_sector>>kafka_to_bronze_wfpc>>kafka_to_bronze_wfpm>>kafka_to_bronze_needs>>kafka_to_bronze_idps>>kafka_to_bronze_pop>>kafka_to_bronze_sol

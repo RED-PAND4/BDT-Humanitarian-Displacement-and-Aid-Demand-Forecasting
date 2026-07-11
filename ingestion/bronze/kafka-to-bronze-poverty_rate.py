@@ -45,21 +45,24 @@ if __name__ == "__main__":
         "location_name": "location_name",
         "admin1_code": "admin1_code",
         "admin1_name": "admin1_name",
+        "admin_level": "admin_level",
+        "resource_hdx_id": "resource_hdx_id",
         "mpi": "mpi",
         "resource_hdx_id": "resource_hdx_id",
         "headcount_ratio": "headcount_ratio",
         "intensity_of_deprivation": "intensity_of_deprivation",
+        "vulnerable_to_poverty": "vulnerable_to_poverty",
+        "in_severe_poverty": "in_severe_poverty",
         "reference_period_start":"reference_period_start",
         "reference_period_end":"reference_period_end"
         # Easily add or remove other fields from the API above as needed
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.povertyrate
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/povertyrate'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="povertyrate"
+    )
     print("Starting Kafka Read Stream...")
 
     # Read stream from Kafka topic

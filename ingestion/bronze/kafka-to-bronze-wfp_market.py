@@ -45,6 +45,7 @@ if __name__ == "__main__":
         "admin1_name": "admin1_name",
         "admin2_code": "admin2_code",
         "admin2_name": "admin2_name",
+        "admin_level": "admin_level",
         "code": "code",
         "name": "name",
         "lat": "lat",

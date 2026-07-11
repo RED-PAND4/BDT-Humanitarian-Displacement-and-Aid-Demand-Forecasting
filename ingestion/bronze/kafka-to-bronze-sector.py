@@ -34,12 +34,11 @@ if __name__ == "__main__":
         "name": "name"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.sector
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/sector'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="sector"
+    )
     print("Starting Kafka Read Stream...")
 
     # Read stream from Kafka topic

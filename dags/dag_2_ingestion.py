@@ -145,4 +145,4 @@ with DAG(
 
     
     #[bronze_to_silver_bp, bronze_to_silver_currency, bronze_to_silver_fpmm, bronze_to_silver_fs, bronze_to_silver_location, bronze_to_silver_ot, bronze_to_silver_org, bronze_to_silver_pr, bronze_to_silver_sector, bronze_to_silver_wfpc, bronze_to_silver_wfpm,silver_needs, silver_idps, silver_pop, silver_sol ]
-    bronze_to_silver_op>>bronze_to_silver_nr>>bronze_to_silver_ce>>bronze_to_silver_fun>>bronze_to_silver_bp>>bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm
+    silver_needs>>silver_pop>>silver_idps>>silver_sol>>bronze_to_silver_op>>bronze_to_silver_nr>>bronze_to_silver_ce>>bronze_to_silver_fun>>bronze_to_silver_bp>>bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm

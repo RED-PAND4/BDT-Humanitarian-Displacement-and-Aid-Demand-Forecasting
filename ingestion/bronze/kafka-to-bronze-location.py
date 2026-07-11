@@ -41,16 +41,17 @@ if __name__ == "__main__":
         "name": "name",
         "has_hrp": "has_hrp",
         "in_gho": "in_gho",
-        "from_cods": "from_cods"
+        "from_cods": "from_cods",
+        "reference_period_start": "reference_period_start",
+        "reference_period_end": "reference_period_end"
         # Easily add or remove other fields from the API above as needed
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze LOCATION 's3a://lakehouse/bronze'")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.location
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/location'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="location"
+    )
     print("Starting Kafka Read Stream...")
 
     # Read stream from Kafka topic

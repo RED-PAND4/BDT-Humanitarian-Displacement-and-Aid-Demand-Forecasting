@@ -26,28 +26,28 @@ def main() -> None:
    
     #--- API a OFFSET (HumData) ---
     api_list = [
-        # {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "food_security", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-security", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
+        {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "food_security", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-security", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
         {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        # {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 0, "limit": 1000, "active": True},
-        # {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
-        # {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True}
+        {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
+        {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True}
     ]
 
-    MAX_ITERATIONS = 99  # Sicurezza per evitare cicli infiniti durante i test
+    MAX_ITERATIONS = 5  # Sicurezza per evitare cicli infiniti durante i test
     iteration_count = 0
 
     while any(api["active"] for api in api_list):

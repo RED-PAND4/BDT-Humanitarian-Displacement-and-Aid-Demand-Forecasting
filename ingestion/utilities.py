@@ -1,6 +1,6 @@
 import sys
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, from_json, regexp_replace, trim, current_timestamp, row_number
+from pyspark.sql.functions import col, from_json, regexp_replace, trim, current_timestamp, row_number, to_date, year, month, dayofmonth
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Dict, List, Optional
 from pyspark.sql.window import Window 
@@ -78,9 +78,9 @@ def clean_and_deduplicate_data(df: DataFrame, subset_cols: list) -> DataFrame:
     :param subset_cols: List of column names to check for nulls and use as deduplication keys
     :return: Cleaned and deduplicated PySpark DataFrame
     """
-    # 1. Clean the Data: Drop rows where critical fields are null
-    cleaned_df = df.dropna(subset=subset_cols)
-    print(f"Number of records after dropping nulls: {cleaned_df.count()}")
+    # # 1. Clean the Data: Drop rows where critical fields are null
+    # cleaned_df = df.dropna(subset=subset_cols)
+    # print(f"Number of records after dropping nulls: {cleaned_df.count()}")
     
     # 2. Define a Window partitioned by the passed keys and ordered by timestamp descending
     # The *subset_cols unpacks the list into separate arguments for partitionBy
@@ -88,7 +88,7 @@ def clean_and_deduplicate_data(df: DataFrame, subset_cols: list) -> DataFrame:
     
     # 3. Filter to keep only the top row (rank 1 = most recent)
     deduplicated_df = (
-        cleaned_df
+        df
         .withColumn("row_num", row_number().over(window_spec))
         .filter(col("row_num") == 1)
         .drop("row_num")
@@ -112,44 +112,85 @@ def upsert_to_silver_layer(spark: SparkSession, deduplicated_df: DataFrame, tabl
     # Ensures no double slashes if base_path ends with a slash
     target_path = f"{base_path.rstrip('/')}/{table_name}"
     
-    # 1. Check if the table is already initialized
-    try:
-        silver_df = spark.read.format("delta").load(target_path)
-        is_table_initialized = "year" in silver_df.columns
-    except Exception:
-        is_table_initialized = False
-
-    # 2. Extract unique years from the incoming batch
-    unique_years_rows = deduplicated_df.select("year").distinct().collect()
-    unique_years = [row['year'] for row in unique_years_rows]
-
+    # 1. Check if the table is already initialized 
+    silver_df = spark.read.format("delta").load(target_path)
+    is_year_present = "year" in silver_df.columns
+    
     # 3. Write to Silver safely
-    if unique_years:
-        if is_table_initialized:
-            # Scenario A: Table has a schema -> Perform selective overwrite
-            years_predicate = ", ".join([f"'{y}'" if isinstance(y, str) else str(y) for y in unique_years])
-            replace_condition = f"year IN ({years_predicate})"
-            
-            print(f"Applying selective overwrite to {target_path} for years: {unique_years}")
-            (deduplicated_df.write 
-                .format("delta") 
-                .mode("overwrite") 
-                .option("replaceWhere", replace_condition)
-                .save(target_path)
-            )
-        else:
-            # Scenario B: Table is brand new/empty -> Append to initialize the schema
-            print(f"Silver table '{table_name}' has no schema yet. Initializing table structure at {target_path}...")
-            (deduplicated_df.write 
-                .format("delta") 
-                .mode("append") 
-                .save(target_path)
-            )
+    if is_year_present:
+        # Scenario A: Table has a schema -> Perform selective overwrite
+        unique_years_rows = deduplicated_df.select("year").distinct().collect()
+        unique_years = [row['year'] for row in unique_years_rows]
+        years_predicate = ", ".join([f"'{y}'" if isinstance(y, str) else str(y) for y in unique_years])
+        replace_condition = f"year IN ({years_predicate})"
+        
+        print(f"Applying selective overwrite to {target_path} for years: {unique_years}")
+        (deduplicated_df.write 
+            .format("delta") 
+            .mode("overwrite") 
+            .option("replaceWhere", replace_condition)
+            .save(target_path)
+        )
     else:
-        print("No records found in the source DataFrame to write to Silver today.") 
-        return  # Exit early if there's nothing to vacuum
+        # Scenario B: Table is brand new/empty -> Append to initialize the schema
+        print(f"Silver table '{table_name}' has no schema yet or is not temporal. Initializing/Replacing table at {target_path}...")
+        (deduplicated_df.write 
+            .format("delta") 
+            .mode("overwrite") 
+            .save(target_path)
+        )
+    
 
     # 4. Maintenance: Vacuum old files
     # Using the exact identifier format specified (silver.table_name)
     #print(f"Taking out the old files in the silver layer for {table_name}...")
     #spark.sql(f"VACUUM silver.{table_name}")
+
+def extract_date_components(df: DataFrame, date_col: str) -> DataFrame:
+    """
+    Extracts year, month, and day from a timestamp string column formatted as 'YYYY-MM-DDTHH:mm:ss'
+    and adds them as integer columns to the DataFrame.
+
+    Args:
+        df: The input PySpark DataFrame.
+        date_col: The name of the string column containing the date.
+
+    Returns:
+        DataFrame with three new columns: 'year', 'month', and 'day'.
+    """
+    return (
+        df
+        # Parse the ISO timestamp format safely using the literal 'T' mask
+        .withColumn("_temp_parsed_date", to_date(col(date_col), "yyyy-MM-dd'T'HH:mm:ss"))
+        
+        # Extract components
+        .withColumn("year", year(col("_temp_parsed_date")))
+        .withColumn("month", month(col("_temp_parsed_date")))
+        .withColumn("day", dayofmonth(col("_temp_parsed_date")))
+        
+        # Clean up the intermediate column
+        .drop("_temp_parsed_date")
+    )
+
+def initialize_delta_table(spark: SparkSession, db_name: str, table_name: str) -> None:
+    """
+    Creates the target database and an empty Delta table if they do not already exist.
+    The S3 location is automatically inferred as 's3a://lakehouse/db_name/table_name'.
+
+    Args:
+        spark: The active SparkSession object.
+        db_name: Name of the database (e.g., 'silver').
+        table_name: Name of the table (e.g., 'idps').
+    """
+    # Automatically build the location string
+    location = f"s3a://lakehouse/{db_name}/{table_name}"
+    
+    print(f"Ensuring database '{db_name}' exists...")
+    spark.sql(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+    
+    print(f"Ensuring Delta table '{db_name}.{table_name}' is initialized at {location}...")
+    spark.sql(f"""
+        CREATE TABLE IF NOT EXISTS {db_name}.{table_name}
+        USING delta
+        LOCATION '{location}'
+    """)

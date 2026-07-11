@@ -42,7 +42,7 @@ query = (deduplicated_df.writeStream
 
 query.awaitTermination()
 
-#print("Taking out the trash in the Bronze layer...")
+#print("Taking out the old files in the silver layer...")
 
 # Keep only the last 24 hours of deleted/old data
-spark.sql("VACUUM delta.`s3a://lakehouse/bronze/test_data_v3` RETAIN 24 HOURS")
+spark.sql("VACUUM silver.test_data_v3")

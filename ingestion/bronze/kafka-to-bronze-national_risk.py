@@ -43,16 +43,18 @@ if __name__ == "__main__":
         "hazard_exposure_risk": "hazard_exposure_risk",
         "vulnerability_risk": "vulnerability_risk",
         "coping_capacity_risk": "coping_capacity_risk",
+        "meta_missing_indicators_pct": "meta_missing_indicators_pct",
+        "meta_avg_recentness_years": "meta_avg_recentness_years",
         "reference_period_start": "reference_period_start",
-        "reference_period_end": "reference_period_end"
+        "reference_period_end": "reference_period_end",
+        "resource_hdx_id": "resource_hdx_id"
     }
 
-    spark.sql("CREATE DATABASE IF NOT EXISTS bronze")
-    spark.sql("""
-        CREATE TABLE IF NOT EXISTS bronze.national_risk
-        USING delta
-        LOCATION 's3a://lakehouse/bronze/national_risk'
-    """)
+    initialize_delta_table(
+        spark=spark,
+        db_name="bronze",
+        table_name="national_risk"
+    )
     print("Starting Kafka Read Stream...")
 
     raw_df = (
