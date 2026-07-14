@@ -10,7 +10,7 @@ import os
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-from utilities import get_spark_session, parse_kafka_message
+from utilities import get_spark_session, parse_kafka_message, initialize_delta_table
 
 KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "funding"

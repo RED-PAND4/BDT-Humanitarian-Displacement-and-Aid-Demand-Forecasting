@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-from utilities import get_spark_session, parse_kafka_message
+from utilities import get_spark_session, parse_kafka_message, initialize_delta_table
 
 
 KAFKA_BROKER = "kafka:9092"
@@ -37,10 +37,12 @@ if __name__ == "__main__":
         StructField("returned_refugees", IntegerType(), True),
         StructField("idps", IntegerType(), True),
         StructField("returned_idps", IntegerType(), True),
-        StructField("stateless", IntegerType(), True), # Nel JSON è "0" o testo
+        #StructField("stateless", IntegerType(), True), # Nel JSON è "0" o testo
+        StructField("stateless", StringType(), True), 
         StructField("ooc", IntegerType(), True),
         StructField("oip", StringType(), True),       # Nel JSON c'è spesso "-"
-        StructField("hst", IntegerType(), True)        # Nel JSON è "0" o testo
+        #StructField("hst", IntegerType(), True)        # Nel JSON è "0" o testo      
+        StructField("hst", StringType(), True)
     ])
 
     # Dizionario di mappatura: manteniamo tutti i campi
