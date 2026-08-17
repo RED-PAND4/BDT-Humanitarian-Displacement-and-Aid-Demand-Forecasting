@@ -75,11 +75,43 @@ def publish_to_kafka(topic: str, payload: Dict[str, Any]) -> None:
     producer.flush()
 
 
-def extract_records(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+# def extract_records(response: Dict[str, Any]) -> List[Dict[str, Any]]:
+#     """
+#     Find and return the list of records from an API response.
+#     """
+
+#     candidate_fields = ["items", "results", "data"]
+
+#     for field in candidate_fields:
+#         if field in response and isinstance(response[field], list):
+#             return response[field]
+
+#     for key, value in response.items():
+#         if (
+#             isinstance(value, list)
+#             and len(value) > 0
+#             and isinstance(value[0], dict)
+#         ):
+#             return value
+
+#     raise ValueError(
+#         f"Could not find a record collection. Available keys: {list(response.keys())}"
+#     )
+
+
+def extract_records(response: Any) -> List[Dict[str, Any]]:
     """
     Find and return the list of records from an API response.
     """
+    # WORLD BANK MANAGEMENT: The basic answer is a List.
+    if isinstance(response, list):
+        # Explore items to find nested list containing records
+        for item in response:
+            if isinstance(item, list):
+                return item
+        return []
 
+    # HDX and UNHCR MANAGEMENT: The basic answer is a Dictionary (UNCHANGED).
     candidate_fields = ["items", "results", "data"]
 
     for field in candidate_fields:

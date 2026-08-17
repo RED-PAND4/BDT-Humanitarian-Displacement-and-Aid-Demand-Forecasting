@@ -1,6 +1,7 @@
 import sys
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, from_json, regexp_replace, trim, current_timestamp, row_number, to_date, year, month, dayofmonth
+from pyspark.sql.functions import sequence, explode
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 from typing import Dict, List, Optional
 from pyspark.sql.window import Window 
@@ -171,6 +172,32 @@ def extract_date_components(df: DataFrame, date_col: str) -> DataFrame:
         # Clean up the intermediate column
         .drop("_temp_parsed_date")
     )
+
+
+
+def explode_date_range_to_years(df: DataFrame, start_col: str, end_col: str) -> DataFrame:
+    """
+    Estrae l'anno di inizio e l'anno di fine dalle stringhe ISO.
+    Se un record copre più anni (es. 2021-2022), duplica il record 
+    creando una riga per ogni anno coperto, valorizzando la colonna 'year'.
+    """
+    return (
+        df
+        # 1. Parsing sicuro delle date
+        .withColumn("_start_date", to_date(col(start_col), "yyyy-MM-dd'T'HH:mm:ss"))
+        .withColumn("_end_date", to_date(col(end_col), "yyyy-MM-dd'T'HH:mm:ss"))
+        
+        # 2. Estrazione degli anni
+        .withColumn("_start_year", year(col("_start_date")))
+        .withColumn("_end_year", year(col("_end_date")))
+        
+        # 3. Creazione dell'array di anni ed esplosione in righe multiple
+        .withColumn("year", explode(sequence(col("_start_year"), col("_end_year"))))
+        
+        # 4. Pulizia delle colonne temporanee
+        .drop("_start_date", "_end_date", "_start_year", "_end_year")
+    )
+
 
 def initialize_delta_table(spark: SparkSession, db_name: str, table_name: str) -> None:
     """

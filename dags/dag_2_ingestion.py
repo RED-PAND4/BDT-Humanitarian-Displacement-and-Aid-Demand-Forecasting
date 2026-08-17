@@ -17,14 +17,70 @@ with DAG(
     max_active_runs=1,
 ) as dag:
 
-    # # Task C: Clean the data (Bronze -> Silver)
-    # bronze_to_silver = SparkSubmitOperator(
-    #     task_id='bronze_to_silver_task',
-    #     application='/opt/spark/jobs/silver/bronze-to-silver.py',
-    #     conn_id='spark_default',
-    #     packages='io.delta:delta-spark_2.12:3.2.0',
-    # )
-    # Task C: Clean the data (Bronze -> Silver)
+    # 1. Clean task for UNHCR Population
+    bronze_to_silver_pop = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_pop',
+        application='/opt/spark/jobs/silver/bronze-to-silver_unhcr_population.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 2. Clean task for UNHCR Solutions
+    bronze_to_silver_sol = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_sol',
+        application='/opt/spark/jobs/silver/bronze-to-silver_unhcr_solutions.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 3. Clean task for World Bank Total Population
+    bronze_to_silver_tot_pop = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_tot_pop',
+        application='/opt/spark/jobs/silver/bronze-to-silver-wb_tot_pop.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 4. Clean task for Conflict Events
+    bronze_to_silver_ce = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_ce',
+        application='/opt/spark/jobs/silver/bronze-to-silver-conflict_events.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 5. Clean task for Poverty Rate
+    bronze_to_silver_pr = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_pr',
+        application='/opt/spark/jobs/silver/bronze-to-silver-poverty_rate.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 5. Clean task for Poverty Rate
+    bronze_to_silver_wb_poverty_MPM = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_wb_poverty_MPM',
+        application='/opt/spark/jobs/silver/bronze-to-silver-wb_poverty_MPM.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # 6. Clean task for Poverty Rate
+    bronze_to_silver_wb_extreme_poverty = SparkSubmitOperator(
+        task_id='bronze_to_silver_task_wb_extreme_poverty',
+        application='/opt/spark/jobs/silver/bronze-to-silver-wb_extreme_poverty.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    # # # Task C: Clean the data (Bronze -> Silver)
+    # # bronze_to_silver = SparkSubmitOperator(
+    # #     task_id='bronze_to_silver_task',
+    # #     application='/opt/spark/jobs/silver/bronze-to-silver.py',
+    # #     conn_id='spark_default',
+    # #     packages='io.delta:delta-spark_2.12:3.2.0',
+    # # )
+    #Task C: Clean the data (Bronze -> Silver)
     bronze_to_silver_currency = SparkSubmitOperator(
         task_id='bronze_to_silver_task_c',
         application='/opt/spark/jobs/silver/bronze-to-silver-currency.py',
@@ -61,24 +117,19 @@ with DAG(
         conn_id='spark_default',
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
-    bronze_to_silver_pr = SparkSubmitOperator(
-        task_id='bronze_to_silver_task_pr',
-        application='/opt/spark/jobs/silver/bronze-to-silver-poverty_rate.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
+
     bronze_to_silver_sector = SparkSubmitOperator(
         task_id='bronze_to_silver_task_s',
         application='/opt/spark/jobs/silver/bronze-to-silver-sector.py',
         conn_id='spark_default',
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
-    bronze_to_silver_bp = SparkSubmitOperator(
-        task_id='bronze_to_silver_task_bp',
-        application='/opt/spark/jobs/silver/bronze-to-silver-baseline_population.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
+    # bronze_to_silver_bp = SparkSubmitOperator(
+    #     task_id='bronze_to_silver_task_bp',
+    #     application='/opt/spark/jobs/silver/bronze-to-silver-baseline_population.py',
+    #     conn_id='spark_default',
+    #     packages='io.delta:delta-spark_2.12:3.2.0',
+    # )
     bronze_to_silver_wfpc = SparkSubmitOperator(
         task_id='bronze_to_silver_task_wfpc',
         application='/opt/spark/jobs/silver/bronze-to-silver-wfp_commodity.py',
@@ -105,37 +156,22 @@ with DAG(
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
 
-    silver_pop = SparkSubmitOperator(
-        task_id='silver_unhcr_pop',
-        application='/opt/spark/jobs/silver/bronze-to-silver_unhcr_population.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
 
-    silver_sol = SparkSubmitOperator(
-        task_id='silver_unhcr_sol',
-        application='/opt/spark/jobs/silver/bronze-to-silver_unhcr_solutions.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
-    bronze_to_silver_ce = SparkSubmitOperator(
-        task_id='bronze_to_silver_task_ce',
-        application='/opt/spark/jobs/silver/bronze-to-silver-conflict_events.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
+
     bronze_to_silver_fun = SparkSubmitOperator(
         task_id='bronze_to_silver_task_fun',
         application='/opt/spark/jobs/silver/bronze-to-silver-funding.py',
         conn_id='spark_default',
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
-    bronze_to_silver_nr = SparkSubmitOperator(
-        task_id='bronze_to_silver_task_nr',
-        application='/opt/spark/jobs/silver/bronze-to-silver-national_risk.py',
-        conn_id='spark_default',
-        packages='io.delta:delta-spark_2.12:3.2.0',
-    )
+
+    # bronze_to_silver_nr = SparkSubmitOperator(
+    #     task_id='bronze_to_silver_task_nr',
+    #     application='/opt/spark/jobs/silver/bronze-to-silver-national_risk.py',
+    #     conn_id='spark_default',
+    #     packages='io.delta:delta-spark_2.12:3.2.0',
+    # )
+
     bronze_to_silver_op = SparkSubmitOperator(
         task_id='bronze_to_silver_task_op',
         application='/opt/spark/jobs/silver/bronze-to-silver-operational_presence.py',
@@ -143,6 +179,11 @@ with DAG(
         packages='io.delta:delta-spark_2.12:3.2.0',
     )
 
-    
-    #[bronze_to_silver_bp, bronze_to_silver_currency, bronze_to_silver_fpmm, bronze_to_silver_fs, bronze_to_silver_location, bronze_to_silver_ot, bronze_to_silver_org, bronze_to_silver_pr, bronze_to_silver_sector, bronze_to_silver_wfpc, bronze_to_silver_wfpm,silver_needs, silver_idps, silver_pop, silver_sol ]
-    silver_needs>>silver_pop>>silver_idps>>silver_sol>>bronze_to_silver_op>>bronze_to_silver_nr>>bronze_to_silver_ce>>bronze_to_silver_fun>>bronze_to_silver_bp>>bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm
+    bronze_to_silver_wb_gdp = SparkSubmitOperator(
+        task_id='run_bronze_to_silver_wb_gdp',
+        application='/opt/spark/jobs/silver/bronze-to-silver-wb_gdp.py',
+        conn_id='spark_default',
+        packages='io.delta:delta-spark_2.12:3.2.0',
+    )
+
+    bronze_to_silver_pop>>bronze_to_silver_sol>>bronze_to_silver_tot_pop>>bronze_to_silver_wb_poverty_MPM>>silver_needs>>silver_idps>>bronze_to_silver_op>>bronze_to_silver_ce>>bronze_to_silver_fun>>bronze_to_silver_currency>>bronze_to_silver_fpmm>>bronze_to_silver_fs>>bronze_to_silver_location>>bronze_to_silver_ot>>bronze_to_silver_org>>bronze_to_silver_pr>>bronze_to_silver_sector>>bronze_to_silver_wfpc>>bronze_to_silver_wfpm

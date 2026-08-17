@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #print("Clearing stale catalog metadata...")
     #spark.sql("DROP TABLE IF EXISTS default.test1")
     
-    # Schema basato sul JSON dell'API UNHCR Population
+    # UNHCR Population API JSON-based schema
     schema = StructType([
         StructField("year", IntegerType(), True),
         StructField("coo_id", StringType(), True),
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         StructField("hst", StringType(), True)
     ])
 
-    # Dizionario di mappatura: manteniamo tutti i campi
+    # Mapping Dictionary: We keep all fields
     my_fields_to_keep = {
         "year": "year",
         "coo_id": "coo_id",
