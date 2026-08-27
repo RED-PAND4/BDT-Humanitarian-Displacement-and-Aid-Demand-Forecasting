@@ -29,11 +29,12 @@ def main() -> None:
     api_list = [
         # POPULATION (UNHCR API): refugees, asylum_seekers, idps, oip, occ, stateless, hst by coo/coa/year
         {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
-        # IDPs (HDX HAPI): idps by coo/coa/year
-        {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
         # SOLUTIONS (UNHCR API): returned_refugees, returned_idps, resettlement, naturalisation by coo/coa/year
         {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},   
-
+        # NOWCASTING (UNHCR API): mid-year estimates
+        {"topic": "nowcasting", "endpoint": "https://api.unhcr.org/population/v1/nowcasting/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
+        # UNRWA (UNHCR API): Palestinian refugees registered under the UNRWA mandate
+        {"topic": "unrwa", "endpoint": "https://api.unhcr.org/population/v1/unrwa/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
 
         # Total Population (World Bank API): total population by country/year
         {"topic": "worldbank_population", "endpoint": "http://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL", "pagination_type": "page_wb", "current": 1, "limit": 10000, "active": True},
@@ -41,7 +42,7 @@ def main() -> None:
         {"topic": "worldbank_gdp", "endpoint": "http://api.worldbank.org/v2/country/all/indicator/NY.GDP.PCAP.CD", "pagination_type": "page_wb", "current": 1, "limit": 10000, "active": True}, 
 
         # Conflict Events (HDX HAPI)
-        {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 1800000, "limit": 10000, "active": True},
+        {"topic": "conflict_events", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/conflict-events", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
 
         # Poverty Rate MPI (HDX HAPI)
         {"topic": "poverty_rate", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/poverty-rate", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
@@ -56,52 +57,49 @@ def main() -> None:
         # Funding (HDX HAPI)
         {"topic": "funding", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/funding", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
 
+        # IDPs (HDX HAPI): idps by coo/coa/year
+        {"topic": "idps", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/idps/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
         # Humanitarian Needs (HDX HAPI)
-        {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 610000, "limit": 10000, "active": True},
-
-        # Api per resource priotization (?)
+        {"topic": "humanitarian_needs", "endpoint": "https://hapi.humdata.org/api/v2/affected-people/humanitarian-needs/", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        # Operational Presence (HDX HAPI)
         {"topic": "operational_presence", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/operational-presence", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "org_type", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org-type", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "org", "endpoint": "https://hapi.humdata.org/api/v2/metadata/org", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        # Sector metadata (HDX HAPI): each sector with its code and name
         {"topic": "sector", "endpoint": "https://hapi.humdata.org/api/v2/metadata/sector", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "wfp_commodity", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-commodity", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "wfp_market", "endpoint": "https://hapi.humdata.org/api/v2/metadata/wfp-market", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
         
-        # api inutili (?)
-        {"topic": "currency", "endpoint": "https://hapi.humdata.org/api/v2/metadata/currency", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "food_prices_market_monitor", "endpoint": "https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/food-prices-market-monitor", "pagination_type": "offset", "current": 1800000, "limit": 10000, "active": True},
-        {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
-        {"topic": "baseline_population", "endpoint": "https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True}
-                
-
+        # Location metadata (HDX HAPI): each country with its flag has_hrp and in_gho (from which year)
+        {"topic": "location", "endpoint": "https://hapi.humdata.org/api/v2/metadata/location", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True},
+        # National Risk (HDX HAPI)
+        {"topic": "national_risk", "endpoint": "https://hapi.humdata.org/api/v2/coordination-context/national-risk", "pagination_type": "offset", "current": 0, "limit": 10000, "active": True}
+                    
     ]
 
-    MAX_ITERATIONS = 5  # Sicurezza per evitare cicli infiniti durante i test
+    MAX_ITERATIONS = 150  # Security to avoid infinite loops during testing
     iteration_count = 0
 
     while any(api["active"] for api in api_list):
         iteration_count += 1
         if iteration_count > MAX_ITERATIONS:
-            print(f"\n⚠️ Blocco di sicurezza: raggiunto il limite di {MAX_ITERATIONS} iterazioni.")
+            print(f"\n⚠️ Security block: reached the limit of {MAX_ITERATIONS} iterations.")
             break
             
-        print(f"\n=== ITERAZIONE DI GRUPPO N. {iteration_count} ===")
+        print(f"\n=== GROUP ITERATION N. {iteration_count} ===")
         
         for api in api_list:
             if not api["active"]:
                 continue
                 
-            # 1. Costruiamo i parametri dinamici in base al tipo di paginazione
+            # 1. We build dynamic parameters based on pagination type
             current_params = {}
-            
+
+            # Pagination style for the HDX HAPI
             if api["pagination_type"] == "offset":
                 current_params["limit"] = api["limit"]
                 current_params["offset"] = api["current"]
                 current_params["start_date"] = str(start_year)
                 current_params["end_date"] = str(end_year)
-                print(f"Estrazione {api['topic']} -> Tipo: Offset, Valore: {api['current']}")
-                
+                print(f"Extraction {api['topic']} -> Type: Offset, Value: {api['current']}")
+
+            # Pagination style for the UNHCR API
             elif api["pagination_type"] == "page":
                 current_params["limit"] = api["limit"]
                 current_params["page"] = api["current"]
@@ -109,17 +107,18 @@ def main() -> None:
                 current_params["coo_all"] = True
                 current_params["yearFrom"] = start_year
                 current_params["yearTo"] = end_year
-                print(f"Estrazione {api['topic']} -> Tipo: Pagina, Valore: {api['current']}")
+                print(f"Extraction {api['topic']} -> Type: Page, Value: {api['current']}")
 
+            # Pagination style for the World Bank API
             elif api["pagination_type"] == "page_wb":
                 current_params["per_page"] = api["limit"]
                 current_params["page"] = api["current"]
                 current_params["format"] = "json"
-                # Sintassi World Bank per gli anni: YYYY:YYYY
+                # World Bank Syntax for years: YYYY:YYYY
                 current_params["date"] = f"{start_year}:{end_year}"
-                print(f"Estrazione {api['topic']} -> Tipo: Page_WB, Valore: {api['current']}")
+                print(f"Extraction {api['topic']} -> Type: Page_WB, Value: {api['current']}")
             
-            # 2. Eseguiamo la chiamata
+            # 2. Let's execute the API call
             result = fetch_and_publish(
                 topic=api["topic"], 
                 endpoint=api["endpoint"], 
@@ -127,22 +126,22 @@ def main() -> None:
             )
             
             num_records = result.get("records_published", 0) if result else 0
-            print(f"-> Ricevuti e pubblicati {num_records} record.")
+            print(f"-> Received and published {num_records} records.")
             
-            # 3. Controlliamo se i dati sono finiti
+            # 3. Let's check if the data is finished
             if num_records < api["limit"]:
-                print(f"✓ {api['topic']} non ha più dati. Disattivata.")
+                print(f"✓ {api['topic']} has no more data. Deactivated.")
                 api["active"] = False
             else:
-                # 4. Incrementiamo il contatore in modo specifico per il tipo di API
+                # 4. Let's increment the counter in a specific way for the API type
                 if api["pagination_type"] == "offset":
-                    api["current"] += api["limit"]  # L'offset aumenta di 1000, 2000, 3000...
+                    api["current"] += api["limit"]  # The offset increases by 1000, 2000, 3000...
                 elif api["pagination_type"] in ["page", "page_wb"]:
                     api["current"] += 1
                     
-                print(f"↻ {api['topic']} ha ancora dati. Prossimo valore: {api['current']}")
+                print(f"↻ {api['topic']} has more data. Next value: {api['current']}")
 
-    print("\nFine del processo.")
+    print("\nEnd of API extraction process.")
 
 
 if __name__ == "__main__":
