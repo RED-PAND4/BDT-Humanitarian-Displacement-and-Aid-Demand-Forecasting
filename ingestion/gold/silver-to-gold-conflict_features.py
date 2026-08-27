@@ -7,10 +7,14 @@ sys.path.append(parent_dir)
 
 from utilities import get_spark_session, initialize_delta_table
 
-# 1. Inizializzazione sessione Spark
+# ==========================================
+# 1. Initialization Spark Session
+# ==========================================
 spark = get_spark_session("SilverToGold-ConflictEvents")
 
-# 2. Lettura della tabella Silver
+# ==========================================
+# 2. Reading the Silver Table
+# ==========================================
 conflict_silver_df = spark.read.format("delta").load("s3a://lakehouse/silver/conflict_events")
 
 # 3. Pulizia preliminare: gestiamo i NULL e l'estrazione dell'anno
@@ -18,7 +22,9 @@ conflict_clean = conflict_silver_df \
     .withColumn("year", F.year("reference_period_start")) \
     .fillna({"fatalities": 0, "events": 0})
 
-# 4. Aggregazione Condizionale SENZA conteggio doppio
+# ==========================================
+# 4. Annual National Aggregation (No Double Counting)
+# ==========================================
 gold_conflict_features = conflict_clean.groupBy("location_code", "year").agg(
     
     # Total Fatalities: prese SOLO da political_violence per evitare il doppio conteggio
@@ -52,7 +58,9 @@ gold_conflict_features = conflict_clean.groupBy("location_code", "year").agg(
     ).alias("non_violent_events")
 )
 
-# 5. Inizializzazione e Scrittura nel layer Gold
+# ==========================================
+# 5. Initialization and Writing in the Gold Layer
+# ==========================================
 initialize_delta_table(
     spark=spark,
     db_name="gold",
