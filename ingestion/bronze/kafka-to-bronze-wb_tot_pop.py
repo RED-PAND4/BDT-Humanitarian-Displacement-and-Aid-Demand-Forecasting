@@ -79,7 +79,6 @@ if __name__ == "__main__":
     # ==========================================
     print("Parse Kafka Read Stream...")
     # Parse JSON using the defined schema and select mapped fields via utilities
-    print("Parse Kafka Read Stream...")
     parsed_df = parse_kafka_message(
         df=raw_df,
         schema=schema,

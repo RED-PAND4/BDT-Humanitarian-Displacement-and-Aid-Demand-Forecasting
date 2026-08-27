@@ -86,7 +86,6 @@ if __name__ == "__main__":
         #.option("startingOffsets", "latest")
         .load()
     )
-    print("Parse Kafka Read Stream...")
 
     # ==========================================
     # PHASE 5: Parse and Enrich Data
