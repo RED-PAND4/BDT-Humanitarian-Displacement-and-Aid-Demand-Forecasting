@@ -13,9 +13,16 @@ KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "worldbank_population"
 
 if __name__ == "__main__":
+
+    # ==========================================
+    # PHASE 1: Initialize Spark Session
+    # ==========================================
     spark = get_spark_session("KafkaToBronze-WorldBank")
     
-    # 1. Definiamo lo schema esatto che ci restituisce la World Bank
+    # ==========================================
+    # PHASE 2: Define JSON Schema
+    # ==========================================
+    # Explicit schema mapping the raw payload fields from the Kafka topic
     schema = StructType([
         StructField("indicator", StructType([
             StructField("id", StringType(), True),
@@ -33,8 +40,9 @@ if __name__ == "__main__":
         StructField("decimal", IntegerType(), True)
     ])
 
-    # 2. Mappatura strategica: rinominiamo i campi per la standardizzazione
-    # Trasformiamo la "countryiso3code" nella "location_code" di HDX/UNHCR
+    # Dictionary mapping fields to keep
+    # Strategic Mapping: We Rename Fields for Standardization
+    # Let's turn "countryiso3code" into HDX/UNHCR "location_code"
     my_fields_to_keep = {
         "countryiso3code": "location_code",
         "country.value": "location_name", 
@@ -42,11 +50,19 @@ if __name__ == "__main__":
         "value": "total_population"     
     }
 
+    # ==========================================
+    # PHASE 3: Initialize Target Delta Table
+    # ==========================================
+    # Ensures the database and the empty Delta table exist on MinIO storage
     initialize_delta_table(
         spark=spark,
         db_name="bronze",
         table_name="worldbank_population"
     )
+
+    # =============================================
+    # PHASE 4: Read Streaming Data from Kafka topic
+    # =============================================
     print("Starting Kafka Read Stream...")
 
     raw_df = (
@@ -57,7 +73,12 @@ if __name__ == "__main__":
         .option("startingOffsets", "earliest")
         .load()
     )
-    
+
+    # ==========================================
+    # PHASE 5: Parse and Enrich Data
+    # ==========================================
+    print("Parse Kafka Read Stream...")
+    # Parse JSON using the defined schema and select mapped fields via utilities
     print("Parse Kafka Read Stream...")
     parsed_df = parse_kafka_message(
         df=raw_df,
@@ -65,13 +86,20 @@ if __name__ == "__main__":
         fields_mapping=my_fields_to_keep
     )
     
-    # Rimuoviamo i record aggregati della World Bank (che non hanno ISO3) o senza popolazione
-    parsed_df = parsed_df.filter(col("location_code").isNotNull() & (col("location_code") != ""))
+    # Append ingestion metadata timestamp for lineage and tracking
     parsed_df = parsed_df.withColumn("ingested_at", current_timestamp())
+    
+    # Updated target columns list to include the new column
+    target_columns = list(my_fields_to_keep.values()) + ["ingested_at"]
 
+    # ==========================================
+    # PHASE 6: Write Stream to Delta Lake (Bronze)
+    # ==========================================
     print("Starting Write Streams...")
+
     CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/bronze/worldbank_population"
 
+    print("Writing stream to Delta Lake...")
     delta_query = (
         parsed_df.writeStream
         .format("delta")

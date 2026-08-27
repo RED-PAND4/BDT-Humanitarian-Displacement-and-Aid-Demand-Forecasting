@@ -16,8 +16,16 @@ KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "national_risk"
 
 if __name__ == "__main__":
+
+    # ==========================================
+    # PHASE 1: Initialize Spark Session
+    # ==========================================
     spark = get_spark_session("KafkaToBronze-NationalRisk")
 
+    # ==========================================
+    # PHASE 2: Define JSON Schema
+    # ==========================================
+    # Explicit schema mapping the raw payload fields from the Kafka topic
     schema = StructType([
         StructField("location_code", StringType(), True),
         StructField("location_name", StringType(), True),
@@ -34,6 +42,7 @@ if __name__ == "__main__":
         StructField("resource_hdx_id", StringType(), True)
     ])
 
+    # Dictionary mapping fields to keep
     my_fields_to_keep = {
         "location_code": "location_code",
         "location_name": "location_name",
@@ -50,11 +59,19 @@ if __name__ == "__main__":
         "resource_hdx_id": "resource_hdx_id"
     }
 
+    # ==========================================
+    # PHASE 3: Initialize Target Delta Table
+    # ==========================================
+    # Ensures the database and the empty Delta table exist on MinIO storage
     initialize_delta_table(
         spark=spark,
         db_name="bronze",
         table_name="national_risk"
     )
+
+    # =============================================
+    # PHASE 4: Read Streaming Data from Kafka topic
+    # =============================================
     print("Starting Kafka Read Stream...")
 
     raw_df = (
@@ -66,23 +83,28 @@ if __name__ == "__main__":
         .option("startingOffsets", "earliest")
         .load()
     )
-    print("Parse Kafka Read Stream...")
 
+    # ==========================================
+    # PHASE 5: Parse and Enrich Data
+    # ==========================================
+    print("Parse Kafka Read Stream...")
+    # Parse JSON using the defined schema and select mapped fields via utilities
     parsed_df = parse_kafka_message(
         df=raw_df,
         schema=schema,
         fields_mapping=my_fields_to_keep
     )
-    # target_columns = list(my_fields_to_keep.values())
+    
+    # Append ingestion metadata timestamp for lineage and tracking
     parsed_df = parsed_df.withColumn("ingested_at", current_timestamp())
     
-    
-    # 3. Updated target columns list to include the new column
+    # Updated target columns list to include the new column
     target_columns = list(my_fields_to_keep.values()) + ["ingested_at"]
 
+    # ==========================================
+    # PHASE 6: Write Stream to Delta Lake (Bronze)
+    # ==========================================
     print("Starting Write Streams...")
-
-
 
     CHECKPOINT_PATH = "s3a://lakehouse/checkpoints/national_risk"
 
@@ -100,3 +122,7 @@ if __name__ == "__main__":
 
     print("Waiting for streams to finish...")
     delta_query.awaitTermination()
+
+    print("Execution complete. Explicitly shutting down Spark to release locks...")
+    spark.stop()
+    sys.exit(0)
