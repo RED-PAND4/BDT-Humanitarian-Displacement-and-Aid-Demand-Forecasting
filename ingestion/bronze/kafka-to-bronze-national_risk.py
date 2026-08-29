@@ -79,7 +79,7 @@ if __name__ == "__main__":
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
         .option("subscribe", KAFKA_TOPIC)
-        .option("failOnDataLoss", "false")
+        #.option("failOnDataLoss", "false")
         .option("startingOffsets", "earliest")
         .load()
     )
