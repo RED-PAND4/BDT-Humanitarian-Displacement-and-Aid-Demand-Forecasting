@@ -33,7 +33,7 @@ if __name__ == "__main__":
             StructField("value", StringType(), True)
         ]), True),
         StructField("countryiso3code", StringType(), True),
-        StructField("date", StringType(), True),
+        StructField("date", IntegerType(), True),
         StructField("value", DoubleType(), True), 
         StructField("unit", StringType(), True),
         StructField("obs_status", StringType(), True),

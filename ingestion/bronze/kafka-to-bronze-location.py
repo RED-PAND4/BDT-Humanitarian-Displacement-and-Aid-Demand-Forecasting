@@ -35,8 +35,8 @@ if __name__ == "__main__":
         StructField("has_hrp", BooleanType(), True),
         StructField("in_gho", BooleanType(), True),
         StructField("from_cods", BooleanType(), True),
-        StructField("reference_period_start", TimestampType(), True),
-        StructField("reference_period_end", TimestampType(), True)
+        StructField("reference_period_start", StringType(), True),
+        StructField("reference_period_end", StringType(), True)
     ])
 
     # Dictionary mapping fields to keep

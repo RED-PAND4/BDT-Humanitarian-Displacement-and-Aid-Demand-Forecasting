@@ -41,8 +41,8 @@ if __name__ == "__main__":
         StructField("ipc_type", StringType(), True),
         StructField("population_in_phase", IntegerType(), True),
         StructField("population_fraction_in_phase", DoubleType(), True),
-        StructField("reference_period_start", TimestampType(), True),
-        StructField("reference_period_end", TimestampType(), True)
+        StructField("reference_period_start", StringType(), True),
+        StructField("reference_period_end", StringType(), True)
     ])
 
     # Dictionary mapping fields to keep

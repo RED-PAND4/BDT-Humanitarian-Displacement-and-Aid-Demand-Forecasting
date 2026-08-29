@@ -42,8 +42,8 @@ if __name__ == "__main__":
         StructField("intensity_of_deprivation", DoubleType(), True),
         StructField("vulnerable_to_poverty", DoubleType(), True),
         StructField("in_severe_poverty", DoubleType(), True),
-        StructField("reference_period_start", TimestampType(), True),
-        StructField("reference_period_end", TimestampType(), True)
+        StructField("reference_period_start", StringType(), True),
+        StructField("reference_period_end", StringType(), True)
     ])
 
     # Dictionary mapping fields to keep
