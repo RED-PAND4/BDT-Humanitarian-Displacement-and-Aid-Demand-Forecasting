@@ -36,6 +36,9 @@ services:
     networks:
       - lakehouse
 
+
+
+
   # ════════════════════════════════════════════════════════════
   # STORAGE LAYER
   # ════════════════════════════════════════════════════════════
@@ -260,6 +263,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW__API__SECRET_KEY}
       AIRFLOW__FAB__SESSION_BACKEND: securecookie
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
       SPARK_MASTER_URL: ${SPARK_MASTER_URL}
@@ -286,6 +290,8 @@ services:
       dockerfile: Dockerfile
     image: lakehouse/airflow:3.0
     container_name: airflow-scheduler
+    sysctls:
+      - net.ipv4.tcp_tw_reuse=1
     depends_on:
       postgres:
         condition: service_healthy
@@ -298,6 +304,7 @@ services:
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
       AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW__API__SECRET_KEY}
       SPARK_MASTER_URL: ${SPARK_MASTER_URL}
       AIRFLOW_CONN_SPARK_DEFAULT: '{"conn_type": "spark", "host": "spark://spark-master", "port": 7077}'
       SPARK_CONF_DIR: /opt/spark/conf
@@ -327,6 +334,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW__API__SECRET_KEY}
       _PIP_ADDITIONAL_REQUIREMENTS: "requests kafka-python"
     command: dag-processor
     volumes:
@@ -375,9 +383,13 @@ services:
       superset db upgrade &&
       superset fab create-admin --username admin --firstname Admin --lastname User --email admin@lakehouse.io --password admin &&
       superset init &&
-      if [ -f '/configs/dashboard.zip' ]; then
-        echo 'Importing dashboard...' &&
-        superset import-dashboards -p /configs/dashboard.zip -u admin
+      if [ -f '/configs/dashboard_aid_demand.zip' ]; then
+        echo 'Importing dashboard 1...' &&
+        superset import-dashboards -p /configs/dashboard_aid_demand.zip -u admin
+      fi &&
+      if [ -f '/configs/dashboard_host_pressure.zip' ]; then
+        echo 'Importing dashboard 2...' &&
+        superset import-dashboards -p /configs/dashboard_host_pressure.zip -u admin
       fi &&
       superset run -p 8088 -h 0.0.0.0 --with-threads"
     depends_on:

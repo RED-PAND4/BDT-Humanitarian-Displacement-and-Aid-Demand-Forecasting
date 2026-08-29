@@ -31,7 +31,7 @@ with DAG(
     # Parameters configurable directly from the Airflow UI interface to the trigger
     params={
         "yearFrom": Param(
-            default=2000, 
+            default=2020, 
             type="integer", 
             minimum=1800, 
             maximum=2100, 
