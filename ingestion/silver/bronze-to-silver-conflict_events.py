@@ -22,7 +22,7 @@ if __name__ == "__main__":
         spark.read
         .format("delta")
         .load("s3a://lakehouse/bronze/conflict_events")
-        # .filter(F.to_date(F.col("ingested_at")) >= F.current_date()) # Process only data ingested today
+        .filter(F.to_date(F.col("ingested_at")) >= F.current_date()) # Process only data ingested today
     )
 
     # ==========================================
