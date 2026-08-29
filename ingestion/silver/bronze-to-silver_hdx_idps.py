@@ -1,6 +1,6 @@
-from pyspark.sql import SparkSession
 import sys
 import os
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, year, month, dayofmonth
 from pyspark.sql import functions as F
 
@@ -9,58 +9,70 @@ sys.path.append(parent_dir)
 
 from utilities import *
 
-spark = get_spark_session("BronzeToSilver_HDX_IDPs")
+if __name__ == "__main__":
+    # ==========================================
+    # PHASE 1: Initialize Spark Session
+    # ==========================================
+    spark = get_spark_session("BronzeToSilver_HDX_IDPs")
 
-# 1. Read Bronze as a Stream
-bronze_df = (spark.read
-    .format("delta")
-    #.option("inferSchema", "true")
-    .load("s3a://lakehouse/bronze/idps")
-    .filter(F.to_date(F.col("ingested_at")) >= F.current_date()) # process only the data from kafka done today
-)
+    # ==========================================
+    # PHASE 2: Read Data from Bronze
+    # ==========================================
+    bronze_df = (
+        spark.read
+        .format("delta")
+        .load("s3a://lakehouse/bronze/idps")
+        # .filter(F.to_date(F.col("ingested_at")) >= F.current_date()) # Process only data ingested today
+    )
 
-# 2. Clean the Data
-# Drop rows where critical fields are null
-cleaned_df = bronze_df.dropna(subset=["location_code", "location_name"])
+    # ==========================================
+    # PHASE 3: Clean Missing Critical Values
+    # ==========================================
+    # Drop records missing critical location identifier or IDP population figure
+    cleaned_df = bronze_df.dropna(subset=["location_code", "population"])
 
-# Drop duplicates based on a unique ID or code
-subset_cols=[
-    "location_code",
-    "location_name",
-    "admin1_code",
-    "admin1_name",
-    "admin2_code",
-    "admin2_name",
-    "admin_level",
-    "reporting_round",
-    "assessment_type",
-    "operation",
-    "population",
-    "reference_period_start",
-    "reference_period_end"
-]
+    # ==========================================
+    # PHASE 4: Clean and Deduplicate Data
+    # ==========================================
+    # Deduplication business keys: unique survey event identifiers excluding descriptive names and metrics
+    subset_cols = [
+        "location_code",
+        "admin1_code",
+        "admin2_code",
+        "admin_level",
+        # "population",     # -> we could have a rectification of the number of idps, and it should be updated
+        "reporting_round",
+        "assessment_type",
+        "operation",
+        "reference_period_start",
+        "reference_period_end"
+    ]
+    deduplicated_df = clean_and_deduplicate_data(df=cleaned_df, subset_cols=subset_cols)
 
-deduplicated_df = clean_and_deduplicate_data(df=cleaned_df, subset_cols=subset_cols)
-deduplicated_with_column_df = extract_date_components(deduplicated_df, "reference_period_start")
+    # ==========================================
+    # PHASE 5: Extract Date Components
+    # ==========================================
+    # Extract structured date columns (year, month, day) from reference_period_start
+    silver_ready_df = extract_date_components(deduplicated_df, "reference_period_start")
 
+    # ==========================================
+    # PHASE 6: Initialize and Upsert to Silver
+    # ==========================================
+    initialize_delta_table(
+        spark=spark,
+        db_name="silver",
+        table_name="idps"
+    )
 
-initialize_delta_table(
-    spark=spark,
-    db_name="silver",
-    table_name="idps"
-)
+    upsert_to_silver_layer(
+        spark=spark,
+        deduplicated_df=silver_ready_df,
+        table_name="idps"
+    )
 
-# 3. Write to Silver 
-upsert_to_silver_layer(
-    spark=spark, 
-    deduplicated_df=deduplicated_with_column_df, 
-    table_name="idps"
-)
-
-# # 3. Write to Silver 
-# query= (deduplicated_df.write 
-#     .format("delta") 
-#     .mode("overwrite") 
-#     .save("s3a://lakehouse/silver/idps")
-
-# )
+    # ==========================================
+    # Shutdown Spark Session
+    # ==========================================
+    print("Execution complete. Explicitly shutting down Spark to release locks...")
+    spark.stop()
+    sys.exit(0)
