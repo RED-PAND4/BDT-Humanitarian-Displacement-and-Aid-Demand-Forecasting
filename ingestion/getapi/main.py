@@ -31,10 +31,6 @@ def main() -> None:
         {"topic": "population", "endpoint": "https://api.unhcr.org/population/v1/population/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
         # SOLUTIONS (UNHCR API): returned_refugees, returned_idps, resettlement, naturalisation by coo/coa/year
         {"topic": "solutions", "endpoint": "https://api.unhcr.org/population/v1/solutions/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},   
-        # NOWCASTING (UNHCR API): mid-year estimates
-        {"topic": "nowcasting", "endpoint": "https://api.unhcr.org/population/v1/nowcasting/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
-        # UNRWA (UNHCR API): Palestinian refugees registered under the UNRWA mandate
-        {"topic": "unrwa", "endpoint": "https://api.unhcr.org/population/v1/unrwa/", "pagination_type": "page", "current": 1, "limit": 10000, "active": True},
 
         # Total Population (World Bank API): total population by country/year
         {"topic": "worldbank_population", "endpoint": "http://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL", "pagination_type": "page_wb", "current": 1, "limit": 10000, "active": True},
