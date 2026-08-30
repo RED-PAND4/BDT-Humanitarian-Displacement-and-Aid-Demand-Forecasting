@@ -111,9 +111,7 @@ with DAG(
 
 
     (
-        gold_aid_demand 
-        >> gold_aid_forecast
-        >> gold_conflict
+        gold_conflict
         >> gold_poverty
         >> gold_food_security
         >> gold_funding
@@ -121,4 +119,6 @@ with DAG(
         >> gold_country_fact
         >> gold_host_pressure_indices
         >> ml_host_pressure_forecast
+        >> gold_aid_demand 
+        >> gold_aid_forecast
     )
