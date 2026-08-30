@@ -73,7 +73,7 @@ def main() -> None:
                     
     ]
 
-    MAX_ITERATIONS = 150  # Security to avoid infinite loops during testing
+    MAX_ITERATIONS = 5  # Security to avoid infinite loops during testing
     iteration_count = 0
 
     while any(api["active"] for api in api_list):

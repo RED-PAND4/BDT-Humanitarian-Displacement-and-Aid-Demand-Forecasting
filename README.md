@@ -20,7 +20,8 @@ cp .env.example .env
 Edit `.env` and fill in:
 ```env
 AIRFLOW__CORE__FERNET_KEY=<generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
-AIRFLOW__API_AUTH__JWT_SECRET=<same value as FERNET_KEY>
+AIRFLOW__API_AUTH__JWT_SECRET=<Generate a secret key:  openssl rand -hex 32>
+AIRFLOW__API__SECRET_KEY=<Generate a secret key:  openssl rand -base64 50>
 ```
 
 ### 3. Build custom Docker images
@@ -44,10 +45,6 @@ docker compose up
 2. Find DAGs file
 3. Toggle ON → click ▶ **Trigger DAG** to trigger the one you want to execute
 
-**Via CLI:**
-```bash
-docker exec airflow-scheduler airflow dags trigger <name_of_the_dag>
-```
 
 ### 6. Superset
 

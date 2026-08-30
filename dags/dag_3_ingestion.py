@@ -109,20 +109,16 @@ with DAG(
         packages=DELTA_PACKAGE,
     )
 
-    # ─────────────────────────────────────────────────────────────
-    # Pipeline Dependencies (Topological Execution Order)
-    # ─────────────────────────────────────────────────────────────
-    # 1. Aid Demand branch
-    gold_aid_demand >> gold_aid_forecast
 
-    # 2. Country Fact requires all 4 underlying contextual feature tables
-    [gold_conflict, gold_poverty, gold_food_security, gold_funding]
-
-    # 3. Host Aggregates requires clean displacement matrix
-    gold_displacement
-
-    # 4. Host Pressure Indices merges Country Fact with Host Aggregates
-    gold_country_fact >> gold_host_pressure_indices
-
-    # 5. ML Pressure Classification runs strictly after historical indices exist
-    gold_host_pressure_indices >> ml_host_pressure_forecast
+    (
+        gold_aid_demand 
+        >> gold_aid_forecast
+        >> gold_conflict
+        >> gold_poverty
+        >> gold_food_security
+        >> gold_funding
+        >> gold_displacement
+        >> gold_country_fact
+        >> gold_host_pressure_indices
+        >> ml_host_pressure_forecast
+    )

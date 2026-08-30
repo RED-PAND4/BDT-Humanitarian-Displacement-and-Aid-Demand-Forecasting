@@ -246,7 +246,7 @@ services:
     networks:
       - lakehouse
 
-  airflow-webserver:   #not needed if just visualisation, if necessary also not needed for ingestion
+  airflow-webserver:   #not needed if just visualisation
     build:
       context: ./docker/airflow
       dockerfile: Dockerfile
