@@ -122,6 +122,9 @@ def upsert_to_silver_layer(spark: SparkSession, deduplicated_df: DataFrame, tabl
         # Scenario A: Table has a schema -> Perform selective overwrite
         unique_years_rows = deduplicated_df.select("year").distinct().collect()
         unique_years = [row['year'] for row in unique_years_rows]
+        if not unique_years:
+            print(f"No valid 'year' values present in the batch for '{table_name}'. Skipping selective overwrite.")
+            return
         years_predicate = ", ".join([f"'{y}'" if isinstance(y, str) else str(y) for y in unique_years])
         replace_condition = f"year IN ({years_predicate})"
         
